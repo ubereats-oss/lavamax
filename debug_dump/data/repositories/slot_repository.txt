@@ -1,0 +1,58 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: import 'package:lavamax/data/models/slot_model.dart';
+   3: 
+   4: class SlotRepository {
+   5:   final FirebaseFirestore _firestore;
+   6: 
+   7:   SlotRepository(this._firestore);
+   8: 
+   9:   Future<List<SlotModel>> getAvailableSlotsByBranch(
+  10:     String branchId,
+  11:     DateTime date,
+  12:   ) async {
+  13:     try {
+  14:       final startOfDay = DateTime(date.year, date.month, date.day);
+  15:       final endOfDay = startOfDay.add(const Duration(days: 1));
+  16: 
+  17:       final snapshot = await _firestore
+  18:           .collection('slots')
+  19:           .where('branch_id', isEqualTo: branchId)
+  20:           .where('is_available', isEqualTo: true)
+  21:           .where('start_time', isGreaterThanOrEqualTo: startOfDay)
+  22:           .where('start_time', isLessThan: endOfDay)
+  23:           .orderBy('start_time')
+  24:           .get();
+  25: 
+  26:       return snapshot.docs
+  27:           .map((doc) => SlotModel.fromFirestore(doc))
+  28:           .toList();
+  29:     } catch (e) {
+  30:       throw Exception('Erro ao buscar horários disponíveis: $e');
+  31:     }
+  32:   }
+  33: 
+  34:   Future<void> reserveSlot(String slotId, String appointmentId) async {
+  35:     try {
+  36:       await _firestore.collection('slots').doc(slotId).update({
+  37:         'is_available': false,
+  38:         'appointment_id': appointmentId,
+  39:         'updated_at': FieldValue.serverTimestamp(),
+  40:       });
+  41:     } catch (e) {
+  42:       throw Exception('Erro ao reservar horário: $e');
+  43:     }
+  44:   }
+  45: 
+  46:   Future<void> releaseSlot(String slotId) async {
+  47:     try {
+  48:       await _firestore.collection('slots').doc(slotId).update({
+  49:         'is_available': true,
+  50:         'appointment_id': null,
+  51:         'updated_at': FieldValue.serverTimestamp(),
+  52:       });
+  53:     } catch (e) {
+  54:       throw Exception('Erro ao liberar horário: $e');
+  55:     }
+  56:   }
+  57: }
+  58: 

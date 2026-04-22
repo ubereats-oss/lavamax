@@ -1,0 +1,45 @@
+{
+  "include": [
+
+    // ── DART / FLUTTER ──────────────────────────────
+    "lib/**/*.dart",
+    "test/**/*.dart",
+
+    // ── CONFIGURAÇÃO RAIZ ───────────────────────────
+    "pubspec.yaml",
+    "pubspec.lock",
+    "analysis_options.yaml",
+    "firebase.json",
+    "firestore.rules",
+    "storage.rules",
+
+    // ── ANDROID ─────────────────────────────────────
+    "android/app/src/main/AndroidManifest.xml",
+    "android/app/build.gradle",
+    "android/app/build.gradle.kts",
+    "android/build.gradle",
+    "android/build.gradle.kts",
+    "android/settings.gradle",
+    "android/settings.gradle.kts",
+    "android/app/google-services.json",
+    "android/app/src/**/google-services.json",
+    "android/app/proguard-rules.pro",
+
+    // ── iOS ─────────────────────────────────────────
+    "ios/Runner/Info.plist",
+    "ios/Runner/AppDelegate.swift",
+    "ios/Runner/AppDelegate.m",
+    "ios/Runner/Runner.entitlements",
+    "ios/Runner/GoogleService-Info.plist",
+    "ios/Podfile",
+
+    // ── WEB ─────────────────────────────────────────
+    "web/index.html",
+    "web/manifest.json",
+
+    // ── FIREBASE (gerado pelo FlutterFire CLI) ───────
+    "lib/firebase_options.dart",
+    "lib/firebase_options_*.dart",
+    "firestore.indexes.json"
+  ]
+}

@@ -1,0 +1,67 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:lavamax/core/constants/app_colors.dart';
+   3: import 'package:lavamax/core/constants/app_dimensions.dart';
+   4: import 'package:lavamax/data/models/service_model.dart';
+   5: 
+   6: class ServiceCard extends StatelessWidget {
+   7:   final ServiceModel service;
+   8:   final VoidCallback onTap;
+   9: 
+  10:   const ServiceCard({
+  11:     Key? key,
+  12:     required this.service,
+  13:     required this.onTap,
+  14:   }) : super(key: key);
+  15: 
+  16:   @override
+  17:   Widget build(BuildContext context) {
+  18:     return GestureDetector(
+  19:       onTap: onTap,
+  20:       child: Card(
+  21:         child: Padding(
+  22:           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+  23:           child: Column(
+  24:             crossAxisAlignment: CrossAxisAlignment.start,
+  25:             children: [
+  26:               Text(
+  27:                 service.name,
+  28:                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  29:                   fontWeight: FontWeight.bold,
+  30:                 ),
+  31:               ),
+  32:               const SizedBox(height: AppDimensions.paddingSmall),
+  33:               Text(
+  34:                 service.description,
+  35:                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  36:                   color: AppColors.grey600,
+  37:                 ),
+  38:                 maxLines: 2,
+  39:                 overflow: TextOverflow.ellipsis,
+  40:               ),
+  41:               const SizedBox(height: AppDimensions.paddingMedium),
+  42:               Row(
+  43:                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  44:                 children: [
+  45:                   Text(
+  46:                     'R\$ ${service.price.toStringAsFixed(2)}',
+  47:                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
+  48:                       color: AppColors.success,
+  49:                       fontWeight: FontWeight.bold,
+  50:                     ),
+  51:                   ),
+  52:                   Text(
+  53:                     '${service.durationMinutes}min',
+  54:                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  55:                       color: AppColors.grey600,
+  56:                     ),
+  57:                   ),
+  58:                 ],
+  59:               ),
+  60:             ],
+  61:           ),
+  62:         ),
+  63:       ),
+  64:     );
+  65:   }
+  66: }
+  67: 

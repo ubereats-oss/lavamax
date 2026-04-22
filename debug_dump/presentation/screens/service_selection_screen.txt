@@ -1,0 +1,60 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   3: import 'package:lavamax/core/constants/app_dimensions.dart';
+   4: import 'package:lavamax/core/constants/app_strings.dart';
+   5: import 'package:lavamax/presentation/providers/service_provider.dart';
+   6: import 'package:lavamax/presentation/screens/slot_selection_screen.dart';
+   7: import 'package:lavamax/presentation/widgets/custom_app_bar.dart';
+   8: import 'package:lavamax/presentation/widgets/service_card.dart';
+   9: 
+  10: class ServiceSelectionScreen extends ConsumerWidget {
+  11:   const ServiceSelectionScreen({Key? key}) : super(key: key);
+  12: 
+  13:   @override
+  14:   Widget build(BuildContext context, WidgetRef ref) {
+  15:     final servicesAsync = ref.watch(servicesProvider);
+  16: 
+  17:     return Scaffold(
+  18:       appBar: CustomAppBar(
+  19:         title: AppStrings.selectService,
+  20:         showBackButton: true,
+  21:       ),
+  22:       body: servicesAsync.when(
+  23:         data: (services) {
+  24:           if (services.isEmpty) {
+  25:             return Center(
+  26:               child: Text(AppStrings.noServicesAvailable),
+  27:             );
+  28:           }
+  29: 
+  30:           return ListView.builder(
+  31:             padding: const EdgeInsets.all(AppDimensions.screenPaddingHorizontal),
+  32:             itemCount: services.length,
+  33:             itemBuilder: (context, index) {
+  34:               final service = services[index];
+  35:               return Padding(
+  36:                 padding: const EdgeInsets.only(bottom: AppDimensions.paddingMedium),
+  37:                 child: ServiceCard(
+  38:                   service: service,
+  39:                   onTap: () {
+  40:                     ref.read(selectedServiceProvider.notifier).state = service;
+  41:                     Navigator.of(context).push(
+  42:                       MaterialPageRoute(
+  43:                         builder: (context) => const SlotSelectionScreen(),
+  44:                       ),
+  45:                     );
+  46:                   },
+  47:                 ),
+  48:               );
+  49:             },
+  50:           );
+  51:         },
+  52:         loading: () => const Center(child: CircularProgressIndicator()),
+  53:         error: (error, stackTrace) => Center(
+  54:           child: Text('Erro: $error'),
+  55:         ),
+  56:       ),
+  57:     );
+  58:   }
+  59: }
+  60: 

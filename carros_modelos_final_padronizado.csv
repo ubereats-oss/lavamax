@@ -1,0 +1,735 @@
+﻿brand;model_clean
+Alfa romeo;145
+Alfa romeo;147
+Alfa romeo;155
+Alfa romeo;156
+Alfa romeo;164
+Alfa romeo;166
+Alfa romeo;2300
+Alfa romeo;Spider
+Aston martin;Db12
+Aston martin;Db9
+Aston martin;Dbs
+Aston martin;Dbx
+Aston martin;Dbx707
+Aston martin;Rapide
+Aston martin;Vanquish
+Aston martin;Vantage
+Aston martin;Virage
+Audi;100
+Audi;80
+Audi;A1
+Audi;A3
+Audi;A4
+Audi;A5
+Audi;A6
+Audi;A7
+Audi;A8
+Audi;Allroad
+Audi;Avant
+Audi;E-tron
+Audi;Q3
+Audi;Q5
+Audi;Q6
+Audi;Q7
+Audi;Q8
+Audi;R8
+Audi;Rs
+Audi;Rs3
+Audi;Rs4
+Audi;Rs5
+Audi;Rs6
+Audi;Rs7
+Audi;S3
+Audi;S4
+Audi;S5
+Audi;S6
+Audi;S7
+Audi;S8
+Audi;Sq5
+Audi;Sq6
+Audi;Sq8
+Audi;Tt
+Bmw;116ia
+Bmw;118i
+Bmw;120i
+Bmw;125i
+Bmw;130i
+Bmw;135ia
+Bmw;218i
+Bmw;220i
+Bmw;225i
+Bmw;316i
+Bmw;318i
+Bmw;320i
+Bmw;323i
+Bmw;325i
+Bmw;328i
+Bmw;330i
+Bmw;335i
+Bmw;420i
+Bmw;428i
+Bmw;430i
+Bmw;435ia
+Bmw;520i
+Bmw;525i/ia
+Bmw;528ia
+Bmw;530i
+Bmw;535ia
+Bmw;540i
+Bmw;545ia
+Bmw;550ia
+Bmw;640i
+Bmw;645ia
+Bmw;650i
+Bmw;730i
+Bmw;735i/ia
+Bmw;740i
+Bmw;745ia
+Bmw;750i
+Bmw;760il
+Bmw;840ci
+Bmw;850i
+Bmw;I3
+Bmw;I4
+Bmw;I5
+Bmw;I7
+Bmw;I8
+Bmw;Ix
+Bmw;M
+Bmw;M1
+Bmw;M2
+Bmw;M3
+Bmw;M4
+Bmw;M5
+Bmw;M6
+Bmw;M7
+Bmw;M8
+Bmw;X1
+Bmw;X2
+Bmw;X3
+Bmw;X4
+Bmw;X5
+Bmw;X6
+Bmw;X7
+Bmw;Z3
+Bmw;Z4
+Bmw;Z8
+Byd;D1
+Byd;Dolphin
+Byd;Et3
+Byd;Han
+Byd;King
+Byd;Seal
+Byd;Shark
+Byd;Song
+Byd;Tan
+Byd;Yuan
+Cadillac;Deville/eldorado
+Cadillac;Seville
+Caoa chery;Arrizo
+Caoa chery;Icar
+Caoa chery;Tiggo
+Chrysler;300
+Chrysler;Caravan
+Chrysler;Cirrus
+Chrysler;Grand caravan
+Chrysler;Le
+Chrysler;Neon
+Chrysler;Pt cruiser
+Chrysler;Sebring
+Chrysler;Stratus
+Chrysler;Town & country
+Chrysler;Vision
+Citroen;Aircross
+Citroen;Aircross7
+Citroen;Ax
+Citroen;Basalt
+Citroen;Berlingo
+Citroen;Bx
+Citroen;C3
+Citroen;C4
+Citroen;C5
+Citroen;C6
+Citroen;C8
+Citroen;Ds3
+Citroen;Ds4
+Citroen;Ds5
+Citroen;Evasion
+Citroen;Grand
+Citroen;Jumper
+Citroen;Jumpy
+Citroen;Xantia
+Citroen;Xm
+Citroen;Xsara
+Citroen;Zx
+Cross lander;Cl-244
+Cross lander;Cl-330
+Ferrari;12cilinrdri
+Ferrari;296
+Ferrari;348
+Ferrari;355
+Ferrari;360
+Ferrari;456
+Ferrari;458
+Ferrari;488
+Ferrari;550
+Ferrari;575m
+Ferrari;612
+Ferrari;812
+Ferrari;California
+Ferrari;F12
+Ferrari;F430
+Ferrari;F458
+Ferrari;F599
+Ferrari;F8
+Ferrari;Ff
+Ferrari;Gtc4
+Ferrari;Portofino
+Ferrari;Purosangue
+Ferrari;Roma
+Ferrari;Sf
+Fiat;500
+Fiat;Argo
+Fiat;Brava
+Fiat;Bravo
+Fiat;Cinquecento
+Fiat;Coupe
+Fiat;Cronos
+Fiat;Doblo
+Fiat;Ducato
+Fiat;Duna
+Fiat;E-scudo
+Fiat;Fastback
+Fiat;Fiorino
+Fiat;Freemont
+Fiat;Idea
+Fiat;Linea
+Fiat;Marea
+Fiat;Mobi
+Fiat;Palio
+Fiat;Panorama
+Fiat;Pulse
+Fiat;Punto
+Fiat;Scudo
+Fiat;Siena
+Fiat;Stilo
+Fiat;Strada
+Fiat;Tempra
+Fiat;Tipo
+Fiat;Titano
+Fiat;Toro
+Fiat;Uno
+Ford;Aerostar
+Ford;Aspire
+Ford;Bronco
+Ford;Club
+Ford;Contour
+Ford;Courier
+Ford;Crown
+Ford;E-transit
+Ford;Ecosport
+Ford;Edge
+Ford;Expedition
+Ford;Explorer
+Ford;F-100
+Ford;F-1000
+Ford;F-150
+Ford;F-250
+Ford;Fiesta
+Ford;Focus
+Ford;Furglaine
+Ford;Fusion
+Ford;Ibiza
+Ford;Ka
+Ford;Maverick
+Ford;Mondeo
+Ford;Mustang
+Ford;Probe
+Ford;Ranger
+Ford;Royale
+Ford;Taurus
+Ford;Territory
+Ford;Thunderbird
+Ford;Transit
+Ford;Windstar
+Gac;Aion
+Gac;Gs4
+Gac;Hyptec
+Gm - chevrolet;Agile
+Gm - chevrolet;Astra
+Gm - chevrolet;Blazer
+Gm - chevrolet;Blazer
+Gm - chevrolet;Bolt
+Gm - chevrolet;Bonanza
+Gm - chevrolet;Brasinca
+Gm - chevrolet;Calibra
+Gm - chevrolet;Camaro
+Gm - chevrolet;Caprice
+Gm - chevrolet;Captiva
+Gm - chevrolet;Cavalier
+Gm - chevrolet;Celta
+Gm - chevrolet;Chevy
+Gm - chevrolet;Cheynne
+Gm - chevrolet;Cobalt
+Gm - chevrolet;Corsa
+Gm - chevrolet;Corvette
+Gm - chevrolet;Cruze
+Gm - chevrolet;Equinox
+Gm - chevrolet;Joy
+Gm - chevrolet;Lumina
+Gm - chevrolet;Malibu
+Gm - chevrolet;Meriva
+Gm - chevrolet;Montana
+Gm - chevrolet;Monza
+Gm - chevrolet;Omega
+Gm - chevrolet;Onix
+Gm - chevrolet;Opala
+Gm - chevrolet;Prisma
+Gm - chevrolet;S10
+Gm - chevrolet;Saturn
+Gm - chevrolet;Sierra
+Gm - chevrolet;Silverado
+Gm - chevrolet;Sonic
+Gm - chevrolet;Sonoma
+Gm - chevrolet;Spacevan
+Gm - chevrolet;Spark
+Gm - chevrolet;Spin
+Gm - chevrolet;Suburban
+Gm - chevrolet;Syclone
+Gm - chevrolet;Tigra
+Gm - chevrolet;Tracker
+Gm - chevrolet;Trafic
+Gm - chevrolet;Trailblazer
+Gm - chevrolet;Vectra
+Gm - chevrolet;Zafira
+Gwm;Haval
+Gwm;Ora
+Gwm;Poer
+Gwm;Tank
+Gwm;Wey
+Hafei;Towner
+Hitech electric;Delivery
+Hitech electric;E-work
+Hitech electric;E.co
+Honda;Accord
+Honda;City
+Honda;Civic
+Honda;Cr-v
+Honda;Fit
+Honda;Hr-v
+Honda;Odyssey
+Honda;Passport
+Honda;Prelude
+Honda;Wr-v
+Honda;Zr-v
+Hyundai;Accent
+Hyundai;Atos
+Hyundai;Azera
+Hyundai;Coupe
+Hyundai;Creta
+Hyundai;Elantra
+Hyundai;Equus
+Hyundai;Excel
+Hyundai;Galloper
+Hyundai;Genesis
+Hyundai;Grand
+Hyundai;H1
+Hyundai;Hb20
+Hyundai;Hr
+Hyundai;I30
+Hyundai;Ioniq
+Hyundai;Ix35
+Hyundai;Kona
+Hyundai;Matrix
+Hyundai;Palisade
+Hyundai;Porter
+Hyundai;Santa fe
+Hyundai;Scoupe
+Hyundai;Sonata
+Hyundai;Terracan
+Hyundai;Trajet
+Hyundai;Tucson
+Hyundai;Veloster
+Hyundai;Veracruz
+Isuzu;Amigo
+Isuzu;Hombre
+Isuzu;Rodeo
+Jac;E-j7
+Jac;E-js1
+Jac;E-js1
+Jac;E-js4
+Jac;E-jv
+Jac;Hunter
+Jac;Iev
+Jac;J2
+Jac;J3
+Jac;J5
+Jac;J6
+Jac;T
+Jac;V260
+Jaecoo;7
+Jaguar;Daimler
+Jaguar;E-pace
+Jaguar;F-pace
+Jaguar;F-type
+Jaguar;I-pace
+Jaguar;S-type
+Jaguar;X-type
+Jaguar;Xe
+Jaguar;Xf
+Jaguar;Xj
+Jaguar;Xk
+Jeep;Cherokee
+Jeep;Commander
+Jeep;Compass
+Jeep;Gladiator
+Jeep;Renegade
+Jeep;Wrangler
+Kia motors;Besta
+Kia motors;Bongo
+Kia motors;Cadenza
+Kia motors;Carens
+Kia motors;Carnival
+Kia motors;Cerato
+Kia motors;Ceres
+Kia motors;Clarus
+Kia motors;Ev5
+Kia motors;Ev9
+Kia motors;Grand carnival
+Kia motors;Magentis
+Kia motors;Mohave
+Kia motors;Niro
+Kia motors;Opirus
+Kia motors;Optima
+Kia motors;Picanto
+Kia motors;Quoris
+Kia motors;Rio
+Kia motors;Sephia
+Kia motors;Shuma
+Kia motors;Sorento
+Kia motors;Soul
+Kia motors;Sportage
+Kia motors;Stinger
+Kia motors;Stonic
+Lamborghini;Aventador
+Lamborghini;Gallardo
+Lamborghini;Huracan
+Lamborghini;Revuelto
+Lamborghini;Urus
+Land rover;Defender
+Land rover;Discovery
+Land rover;Freelander
+Land rover;Range rover
+Land rover;Vogue
+Land rover;Evoque
+Lexus;Ct200h
+Lexus;Es-300
+Lexus;Es-330
+Lexus;Es-350
+Lexus;Gs
+Lexus;Is
+Lexus;Ls
+Lexus;Nx
+Lexus;Rx
+Lexus;Sc
+Lexus;Ux
+Maserati;222
+Maserati;228
+Maserati;3200
+Maserati;430
+Maserati;Coupé
+Maserati;Ghibli
+Maserati;Gran turismo
+Maserati;Grancabrio
+Maserati;Gransport
+Maserati;Levante
+Maserati;Mc20
+Maserati;Quattroporte
+Maserati;Shamal
+Maserati;Spyder
+Mazda;323
+Mazda;626
+Mazda;929
+Mazda;B-2500
+Mazda;B2200
+Mazda;Millenia
+Mazda;Mpv
+Mazda;Mx-3
+Mazda;Mx-5
+Mazda;Navajo
+Mazda;Protegé
+Mazda;Rx
+Mercedes-benz;180
+Mercedes-benz;190
+Mercedes-benz;230
+Mercedes-benz;260
+Mercedes-benz;300
+Mercedes-benz;500
+Mercedes-benz;560
+Mercedes-benz;A
+Mercedes-benz;C
+Mercedes-benz;Cl
+Mercedes-benz;Cla
+Mercedes-benz;Clc
+Mercedes-benz;Clk
+Mercedes-benz;Cls
+Mercedes-benz;E
+Mercedes-benz;Eqa
+Mercedes-benz;Eqb
+Mercedes-benz;Eqc
+Mercedes-benz;Eqe
+Mercedes-benz;Eqs
+Mercedes-benz;Esprinter
+Mercedes-benz;G
+Mercedes-benz;Gl
+Mercedes-benz;Gla
+Mercedes-benz;Glb
+Mercedes-benz;Glc
+Mercedes-benz;Gle
+Mercedes-benz;Glk
+Mercedes-benz;Gls
+Mercedes-benz;Gt
+Mercedes-benz;Ml
+Mercedes-benz;S
+Mercedes-benz;Se
+Mercedes-benz;Slc
+Mercedes-benz;Slk
+Mercedes-benz;Sls
+Mercedes-benz;Sprinter
+Mercedes-benz;Vito
+Mini;Aceman
+Mini;Cooper
+Mini;One
+Mitsubishi;3000
+Mitsubishi;Airtrek
+Mitsubishi;Asx
+Mitsubishi;Colt
+Mitsubishi;Diamant
+Mitsubishi;Eclipse
+Mitsubishi;Expo
+Mitsubishi;Galant
+Mitsubishi;Grandis
+Mitsubishi;L200
+Mitsubishi;L300
+Mitsubishi;Lancer
+Mitsubishi;Mirage
+Mitsubishi;Montero
+Mitsubishi;Outlander
+Mitsubishi;Pajero
+Mitsubishi;Space
+Mitsubishi;Triton
+Nissan;350z
+Nissan;Altima
+Nissan;Ax
+Nissan;D-21
+Nissan;Frontier
+Nissan;Gt-r
+Nissan;Infinit
+Nissan;Kait
+Nissan;Kicks
+Nissan;King-cab
+Nissan;Leaf
+Nissan;Livina
+Nissan;March
+Nissan;Maxima
+Nissan;Micra
+Nissan;Murano
+Nissan;Nx
+Nissan;Pathfinder
+Nissan;Pick-up
+Nissan;Primera
+Nissan;Quest
+Nissan;Sentra
+Nissan;Stanza
+Nissan;Sx
+Nissan;Terrano
+Nissan;Tiida
+Nissan;Versa
+Nissan;X-trail
+Nissan;Xterra
+Nissan;Zx
+Omoda;5
+Omoda;7
+Omoda;E5
+Peugeot;106
+Peugeot;2008
+Peugeot;205
+Peugeot;206
+Peugeot;207
+Peugeot;208
+Peugeot;3008
+Peugeot;306
+Peugeot;307
+Peugeot;308
+Peugeot;405
+Peugeot;406
+Peugeot;407
+Peugeot;408
+Peugeot;5008
+Peugeot;504
+Peugeot;505
+Peugeot;508
+Peugeot;605
+Peugeot;607
+Peugeot;806
+Peugeot;807
+Peugeot;Boxer
+Peugeot;Expert
+Peugeot;Hoggar
+Peugeot;Partner
+Peugeot;Rcz
+Porsche;718
+Porsche;911
+Porsche;928
+Porsche;968
+Porsche;Boxster
+Porsche;Cayenne
+Porsche;Cayman
+Porsche;Macan
+Porsche;Panamera
+Porsche;Taycan
+Ram;1500
+Ram;2500
+Ram;3500
+Ram;Classic
+Ram;Rampage
+Renault;Boreal
+Renault;Captur
+Renault;Clio
+Renault;Duster
+Renault;Express
+Renault;Fluence
+Renault;Kangoo
+Renault;Kardian
+Renault;Kwid
+Renault;Laguna
+Renault;Logan
+Renault;Master
+Renault;Megane
+Renault;Oroch
+Renault;Safrane
+Renault;Sandero
+Renault;Scénic
+Renault;Stepway
+Renault;Symbol
+Renault;Trafic
+Renault;Twingo
+Renault;Zoe
+Rolls-royce;Cullinan
+Rolls-royce;Dawn
+Rolls-royce;Ghost
+Rolls-royce;Phantom
+Rolls-royce;Wraith
+Seat;Cordoba
+Seat;Ibiza
+Seat;Inca
+Ssangyong;Actyon
+Ssangyong;Chairman
+Ssangyong;Istana
+Ssangyong;Korando
+Ssangyong;Kyron
+Ssangyong;Musso
+Ssangyong;Rexton
+Ssangyong;Tivoli
+Ssangyong;Xlv
+Subaru;Forester
+Subaru;Impreza
+Subaru;Legacy
+Subaru;Outback
+Subaru;Svx
+Subaru;Tribeca
+Subaru;Vivio
+Subaru;Xv
+Suzuki;Baleno
+Suzuki;Grand vitara
+Suzuki;Ignis
+Suzuki;Jimny
+Suzuki;S-cross
+Suzuki;Samurai
+Suzuki;Sidekick
+Suzuki;Super
+Suzuki;Swift
+Suzuki;Sx4
+Suzuki;Vitara
+Suzuki;Wagon
+Toyota;Avalon
+Toyota;Bandeirante
+Toyota;Camry
+Toyota;Celica
+Toyota;Corolla
+Toyota;Corolla cross
+Toyota;Corona
+Toyota;Etios
+Toyota;Hiace
+Toyota;Hilux
+Toyota;Land cruiser
+Toyota;Mr-2
+Toyota;Paseo
+Toyota;Previa
+Toyota;Prius
+Toyota;Rav4
+Toyota;Supra
+Toyota;T-100
+Toyota;Yaris
+Troller;Pantanal
+Troller;Rf
+Troller;T-4
+Volvo;440
+Volvo;460
+Volvo;850
+Volvo;940
+Volvo;960
+Volvo;C30
+Volvo;C40
+Volvo;C70
+Volvo;Ec40
+Volvo;Ex30
+Volvo;Ex40
+Volvo;Ex90
+Volvo;S40
+Volvo;S60
+Volvo;S70
+Volvo;S80
+Volvo;S90
+Volvo;V40
+Volvo;V50
+Volvo;V60
+Volvo;V70
+Volvo;Xc
+Vw - volkswagen;Amarok
+Vw - volkswagen;Apolo
+Vw - volkswagen;Bora
+Vw - volkswagen;Caravelle
+Vw - volkswagen;Corrado
+Vw - volkswagen;Crossfox
+Vw - volkswagen;Delivery
+Vw - volkswagen;Eos
+Vw - volkswagen;Eurovan
+Vw - volkswagen;Fox
+Vw - volkswagen;Fusca
+Vw - volkswagen;Gol
+Vw - volkswagen;Golf
+Vw - volkswagen;Jetta
+Vw - volkswagen;Kombi
+Vw - volkswagen;Logus
+Vw - volkswagen;New beetle
+Vw - volkswagen;Nivus
+Vw - volkswagen;Parati
+Vw - volkswagen;Passat
+Vw - volkswagen;Pointer
+Vw - volkswagen;Polo
+Vw - volkswagen;Quantum
+Vw - volkswagen;Santana
+Vw - volkswagen;Saveiro
+Vw - volkswagen;Spacecross
+Vw - volkswagen;Spacefox
+Vw - volkswagen;T-cross
+Vw - volkswagen;Taos
+Vw - volkswagen;Tera
+Vw - volkswagen;Tiguan
+Vw - volkswagen;Touareg
+Vw - volkswagen;Up!
+Vw - volkswagen;Van
+Vw - volkswagen;Virtus
+Vw - volkswagen;Voyage

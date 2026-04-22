@@ -1,0 +1,53 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:lavamax/core/constants/app_colors.dart';
+   3: import 'package:lavamax/core/constants/app_dimensions.dart';
+   4: import 'package:lavamax/data/models/branch_model.dart';
+   5: 
+   6: class BranchCard extends StatelessWidget {
+   7:   final BranchModel branch;
+   8:   final VoidCallback onTap;
+   9: 
+  10:   const BranchCard({
+  11:     Key? key,
+  12:     required this.branch,
+  13:     required this.onTap,
+  14:   }) : super(key: key);
+  15: 
+  16:   @override
+  17:   Widget build(BuildContext context) {
+  18:     return GestureDetector(
+  19:       onTap: onTap,
+  20:       child: Card(
+  21:         child: Padding(
+  22:           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+  23:           child: Column(
+  24:             crossAxisAlignment: CrossAxisAlignment.start,
+  25:             children: [
+  26:               Text(
+  27:                 branch.name,
+  28:                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  29:                   fontWeight: FontWeight.bold,
+  30:                 ),
+  31:               ),
+  32:               const SizedBox(height: AppDimensions.paddingSmall),
+  33:               Text(
+  34:                 branch.address,
+  35:                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  36:                   color: AppColors.grey600,
+  37:                 ),
+  38:               ),
+  39:               const SizedBox(height: AppDimensions.paddingSmall),
+  40:               Text(
+  41:                 branch.phone,
+  42:                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  43:                   color: AppColors.primary,
+  44:                 ),
+  45:               ),
+  46:             ],
+  47:           ),
+  48:         ),
+  49:       ),
+  50:     );
+  51:   }
+  52: }
+  53: 

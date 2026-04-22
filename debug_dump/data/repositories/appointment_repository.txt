@@ -1,0 +1,74 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: import 'package:lavamax/data/models/appointment_model.dart';
+   3: 
+   4: class AppointmentRepository {
+   5:   final FirebaseFirestore _firestore;
+   6: 
+   7:   AppointmentRepository(this._firestore);
+   8: 
+   9:   Future<void> createAppointment(AppointmentModel appointment) async {
+  10:     try {
+  11:       await _firestore
+  12:           .collection('appointments')
+  13:           .doc(appointment.id)
+  14:           .set(appointment.toFirestore());
+  15:     } catch (e) {
+  16:       throw Exception('Erro ao criar agendamento: $e');
+  17:     }
+  18:   }
+  19: 
+  20:   Future<List<AppointmentModel>> getAppointmentsByCustomer(String customerId) async {
+  21:     try {
+  22:       final snapshot = await _firestore
+  23:           .collection('appointments')
+  24:           .where('customer_id', isEqualTo: customerId)
+  25:           .orderBy('appointment_date', descending: true)
+  26:           .get();
+  27: 
+  28:       return snapshot.docs
+  29:           .map((doc) => AppointmentModel.fromFirestore(doc))
+  30:           .toList();
+  31:     } catch (e) {
+  32:       throw Exception('Erro ao buscar agendamentos: $e');
+  33:     }
+  34:   }
+  35: 
+  36:   Future<AppointmentModel?> getAppointmentById(String appointmentId) async {
+  37:     try {
+  38:       final doc = await _firestore
+  39:           .collection('appointments')
+  40:           .doc(appointmentId)
+  41:           .get();
+  42: 
+  43:       if (doc.exists) {
+  44:         return AppointmentModel.fromFirestore(doc);
+  45:       }
+  46:       return null;
+  47:     } catch (e) {
+  48:       throw Exception('Erro ao buscar agendamento: $e');
+  49:     }
+  50:   }
+  51: 
+  52:   Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+  53:     try {
+  54:       await _firestore.collection('appointments').doc(appointmentId).update({
+  55:         'status': status,
+  56:         'updated_at': FieldValue.serverTimestamp(),
+  57:       });
+  58:     } catch (e) {
+  59:       throw Exception('Erro ao atualizar agendamento: $e');
+  60:     }
+  61:   }
+  62: 
+  63:   Future<void> cancelAppointment(String appointmentId) async {
+  64:     try {
+  65:       await _firestore.collection('appointments').doc(appointmentId).update({
+  66:         'status': 'canceled',
+  67:         'updated_at': FieldValue.serverTimestamp(),
+  68:       });
+  69:     } catch (e) {
+  70:       throw Exception('Erro ao cancelar agendamento: $e');
+  71:     }
+  72:   }
+  73: }
+  74: 

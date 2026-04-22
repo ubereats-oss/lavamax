@@ -1,0 +1,42 @@
+   1: import 'package:flutter/material.dart';
+   2: 
+   3: class AppColors {
+   4:   // Primary
+   5:   static const Color primary = Color(0xFF1E88E5);
+   6:   static const Color primaryDark = Color(0xFF1565C0);
+   7:   static const Color primaryLight = Color(0xFF64B5F6);
+   8: 
+   9:   // Secondary
+  10:   static const Color secondary = Color(0xFFFF6F00);
+  11:   static const Color secondaryDark = Color(0xFFE65100);
+  12:   static const Color secondaryLight = Color(0xFFFFB74D);
+  13: 
+  14:   // Neutral
+  15:   static const Color white = Color(0xFFFFFFFF);
+  16:   static const Color black = Color(0xFF000000);
+  17:   static const Color grey50 = Color(0xFFFAFAFA);
+  18:   static const Color grey100 = Color(0xFFF5F5F5);
+  19:   static const Color grey200 = Color(0xFFEEEEEE);
+  20:   static const Color grey300 = Color(0xFFE0E0E0);
+  21:   static const Color grey400 = Color(0xFFBDBDBD);
+  22:   static const Color grey500 = Color(0xFF9E9E9E);
+  23:   static const Color grey600 = Color(0xFF757575);
+  24:   static const Color grey700 = Color(0xFF616161);
+  25:   static const Color grey800 = Color(0xFF424242);
+  26:   static const Color grey900 = Color(0xFF212121);
+  27: 
+  28:   // Status
+  29:   static const Color success = Color(0xFF4CAF50);
+  30:   static const Color error = Color(0xFFF44336);
+  31:   static const Color warning = Color(0xFFFFC107);
+  32:   static const Color info = Color(0xFF2196F3);
+  33: 
+  34:   // Transparency
+  35:   static Color primaryWithOpacity(double opacity) =>
+  36:       primary.withValues(alpha: opacity);
+  37:   static Color blackWithOpacity(double opacity) =>
+  38:       black.withValues(alpha: opacity);
+  39:   static Color whiteWithOpacity(double opacity) =>
+  40:       white.withValues(alpha: opacity);
+  41: }
+  42: 

@@ -1,0 +1,38 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:lavamax/core/constants/app_colors.dart';
+   3: 
+   4: class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+   5:   final String title;
+   6:   final bool showBackButton;
+   7:   final VoidCallback? onBackPressed;
+   8:   final List<Widget>? actions;
+   9: 
+  10:   const CustomAppBar({
+  11:     Key? key,
+  12:     required this.title,
+  13:     this.showBackButton = true,
+  14:     this.onBackPressed,
+  15:     this.actions,
+  16:   }) : super(key: key);
+  17: 
+  18:   @override
+  19:   Widget build(BuildContext context) {
+  20:     return AppBar(
+  21:       title: Text(title),
+  22:       leading: showBackButton
+  23:           ? IconButton(
+  24:               icon: const Icon(Icons.arrow_back),
+  25:               onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+  26:             )
+  27:           : null,
+  28:       actions: actions,
+  29:       backgroundColor: AppColors.primary,
+  30:       foregroundColor: AppColors.white,
+  31:       elevation: 0,
+  32:     );
+  33:   }
+  34: 
+  35:   @override
+  36:   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  37: }
+  38: 

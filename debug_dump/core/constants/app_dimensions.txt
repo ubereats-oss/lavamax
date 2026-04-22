@@ -1,0 +1,33 @@
+   1: class AppDimensions {
+   2:   // Padding & Margin
+   3:   static const double paddingXSmall = 4.0;
+   4:   static const double paddingSmall = 8.0;
+   5:   static const double paddingMedium = 16.0;
+   6:   static const double paddingLarge = 24.0;
+   7:   static const double paddingXLarge = 32.0;
+   8: 
+   9:   // Border Radius
+  10:   static const double radiusSmall = 4.0;
+  11:   static const double radiusMedium = 8.0;
+  12:   static const double radiusLarge = 16.0;
+  13:   static const double radiusXLarge = 24.0;
+  14: 
+  15:   // Icon Sizes
+  16:   static const double iconSmall = 16.0;
+  17:   static const double iconMedium = 24.0;
+  18:   static const double iconLarge = 32.0;
+  19:   static const double iconXLarge = 48.0;
+  20: 
+  21:   // Button Sizes
+  22:   static const double buttonHeight = 48.0;
+  23:   static const double buttonHeightSmall = 40.0;
+  24: 
+  25:   // Card Sizes
+  26:   static const double cardElevation = 2.0;
+  27:   static const double cardElevationHigh = 8.0;
+  28: 
+  29:   // Screen Padding
+  30:   static const double screenPaddingHorizontal = 16.0;
+  31:   static const double screenPaddingVertical = 16.0;
+  32: }
+  33: 

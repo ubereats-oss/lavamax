@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "84104652853",
+    "project_id": "lavamaxapp",
+    "storage_bucket": "lavamaxapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:84104652853:android:b17707dafada20bcab297c",
+        "android_client_info": {
+          "package_name": "com.lavamax.lavamax"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "84104652853-ppa6a86qq60bp5e0msst5frbrqi6l1ll.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lavamax.lavamax",
+            "certificate_hash": "1671594c0a461d559941ebf5b8977ebc1d20ae66"
+          }
+        },
+        {
+          "client_id": "84104652853-c64l2bhkplcr02ttar6ogelr3gp9m9d8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC79PpLoMyki_zOMAJC2A95BPb7WXAb5hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "84104652853-c64l2bhkplcr02ttar6ogelr3gp9m9d8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "84104652853-9nemmmm39mvmdi78dg1hi3fu9n4so2uk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.lavamax.lavamax"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

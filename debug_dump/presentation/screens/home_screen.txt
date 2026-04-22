@@ -1,0 +1,159 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   3: import 'package:lavamax/core/constants/app_colors.dart';
+   4: import 'package:lavamax/core/constants/app_dimensions.dart';
+   5: import 'package:lavamax/core/constants/app_strings.dart';
+   6: import 'package:lavamax/presentation/screens/branch_selection_screen.dart';
+   7: import 'package:lavamax/presentation/screens/my_appointments_screen.dart';
+   8: 
+   9: class HomeScreen extends ConsumerWidget {
+  10:   const HomeScreen({Key? key}) : super(key: key);
+  11: 
+  12:   @override
+  13:   Widget build(BuildContext context, WidgetRef ref) {
+  14:     return Scaffold(
+  15:       appBar: AppBar(
+  16:         title: const Text(AppStrings.appName),
+  17:         centerTitle: true,
+  18:         backgroundColor: AppColors.primary,
+  19:         foregroundColor: AppColors.white,
+  20:         elevation: 0,
+  21:       ),
+  22:       body: SingleChildScrollView(
+  23:         child: Padding(
+  24:           padding: const EdgeInsets.all(AppDimensions.screenPaddingHorizontal),
+  25:           child: Column(
+  26:             crossAxisAlignment: CrossAxisAlignment.stretch,
+  27:             children: [
+  28:               const SizedBox(height: AppDimensions.paddingLarge),
+  29:               // Hero Section
+  30:               Container(
+  31:                 decoration: BoxDecoration(
+  32:                   gradient: LinearGradient(
+  33:                     colors: [
+  34:                       AppColors.primary,
+  35:                       AppColors.primaryDark,
+  36:                     ],
+  37:                     begin: Alignment.topLeft,
+  38:                     end: Alignment.bottomRight,
+  39:                   ),
+  40:                   borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+  41:                 ),
+  42:                 padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+  43:                 child: Column(
+  44:                   crossAxisAlignment: CrossAxisAlignment.start,
+  45:                   children: [
+  46:                     Text(
+  47:                       AppStrings.homeTitle,
+  48:                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+  49:                         color: AppColors.white,
+  50:                         fontWeight: FontWeight.bold,
+  51:                       ),
+  52:                     ),
+  53:                     const SizedBox(height: AppDimensions.paddingSmall),
+  54:                     Text(
+  55:                       AppStrings.homeSubtitle,
+  56:                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  57:                         color: AppColors.white,
+  58:                       ),
+  59:                     ),
+  60:                   ],
+  61:                 ),
+  62:               ),
+  63:               const SizedBox(height: AppDimensions.paddingXLarge),
+  64:               // Action Buttons
+  65:               ElevatedButton.icon(
+  66:                 onPressed: () {
+  67:                   Navigator.of(context).push(
+  68:                     MaterialPageRoute(
+  69:                       builder: (context) => const BranchSelectionScreen(),
+  70:                     ),
+  71:                   );
+  72:                 },
+  73:                 icon: const Icon(Icons.calendar_today),
+  74:                 label: const Text(AppStrings.scheduleNow),
+  75:                 style: ElevatedButton.styleFrom(
+  76:                   backgroundColor: AppColors.primary,
+  77:                   foregroundColor: AppColors.white,
+  78:                   minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+  79:                   shape: RoundedRectangleBorder(
+  80:                     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  81:                   ),
+  82:                 ),
+  83:               ),
+  84:               const SizedBox(height: AppDimensions.paddingMedium),
+  85:               OutlinedButton.icon(
+  86:                 onPressed: () {
+  87:                   Navigator.of(context).push(
+  88:                     MaterialPageRoute(
+  89:                       builder: (context) => const MyAppointmentsScreen(),
+  90:                     ),
+  91:                   );
+  92:                 },
+  93:                 icon: const Icon(Icons.list),
+  94:                 label: const Text(AppStrings.myAppointments),
+  95:                 style: OutlinedButton.styleFrom(
+  96:                   foregroundColor: AppColors.primary,
+  97:                   minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+  98:                   side: const BorderSide(color: AppColors.primary),
+  99:                   shape: RoundedRectangleBorder(
+ 100:                     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+ 101:                   ),
+ 102:                 ),
+ 103:               ),
+ 104:               const SizedBox(height: AppDimensions.paddingXLarge),
+ 105:               // Info Section
+ 106:               Card(
+ 107:                 child: Padding(
+ 108:                   padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+ 109:                   child: Column(
+ 110:                     crossAxisAlignment: CrossAxisAlignment.start,
+ 111:                     children: [
+ 112:                       Text(
+ 113:                         'Por que escolher a LavaMax?',
+ 114:                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
+ 115:                           fontWeight: FontWeight.bold,
+ 116:                         ),
+ 117:                       ),
+ 118:                       const SizedBox(height: AppDimensions.paddingMedium),
+ 119:                       _buildInfoItem(context, '✓', 'Agendamento fácil e rápido'),
+ 120:                       const SizedBox(height: AppDimensions.paddingSmall),
+ 121:                       _buildInfoItem(context, '✓', 'Múltiplas filiais'),
+ 122:                       const SizedBox(height: AppDimensions.paddingSmall),
+ 123:                       _buildInfoItem(context, '✓', 'Serviços de qualidade'),
+ 124:                       const SizedBox(height: AppDimensions.paddingSmall),
+ 125:                       _buildInfoItem(context, '✓', 'Notificações de confirmação'),
+ 126:                     ],
+ 127:                   ),
+ 128:                 ),
+ 129:               ),
+ 130:             ],
+ 131:           ),
+ 132:         ),
+ 133:       ),
+ 134:     );
+ 135:   }
+ 136: 
+ 137:   Widget _buildInfoItem(BuildContext context, String icon, String text) {
+ 138:     return Row(
+ 139:       children: [
+ 140:         Text(
+ 141:           icon,
+ 142:           style: const TextStyle(
+ 143:             color: AppColors.success,
+ 144:             fontSize: 18,
+ 145:             fontWeight: FontWeight.bold,
+ 146:           ),
+ 147:         ),
+ 148:         const SizedBox(width: AppDimensions.paddingMedium),
+ 149:         Expanded(
+ 150:           child: Text(
+ 151:             text,
+ 152:             style: Theme.of(context).textTheme.bodyMedium,
+ 153:           ),
+ 154:         ),
+ 155:       ],
+ 156:     );
+ 157:   }
+ 158: }
+ 159: 

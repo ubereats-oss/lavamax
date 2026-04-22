@@ -1,0 +1,16 @@
+   1: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   2: import 'package:lavamax/data/models/service_model.dart';
+   3: import 'package:lavamax/data/repositories/service_repository.dart';
+   4: import 'package:lavamax/data/services/firebase_service.dart';
+   5: 
+   6: final serviceRepositoryProvider = Provider((ref) {
+   7:   return ServiceRepository(FirebaseService().firestore);
+   8: });
+   9: 
+  10: final servicesProvider = FutureProvider((ref) async {
+  11:   final repository = ref.watch(serviceRepositoryProvider);
+  12:   return repository.getAllServices();
+  13: });
+  14: 
+  15: final selectedServiceProvider = StateProvider<ServiceModel?>((ref) => null);
+  16: 

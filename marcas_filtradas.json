@@ -1,0 +1,210 @@
+[
+  {
+    "codigo": "3",
+    "nome": "Alfa Romeo"
+  },
+  {
+    "codigo": "189",
+    "nome": "ASTON MARTIN"
+  },
+  {
+    "codigo": "6",
+    "nome": "Audi"
+  },
+  {
+    "codigo": "7",
+    "nome": "BMW"
+  },
+  {
+    "codigo": "238",
+    "nome": "BYD"
+  },
+  {
+    "codigo": "10",
+    "nome": "Cadillac"
+  },
+  {
+    "codigo": "245",
+    "nome": "Caoa Chery"
+  },
+  {
+    "codigo": "161",
+    "nome": "Caoa Chery/Chery"
+  },
+  {
+    "codigo": "12",
+    "nome": "Chrysler"
+  },
+  {
+    "codigo": "13",
+    "nome": "CitroÃ«n"
+  },
+  {
+    "codigo": "14",
+    "nome": "Cross Lander"
+  },
+  {
+    "codigo": "20",
+    "nome": "Ferrari"
+  },
+  {
+    "codigo": "21",
+    "nome": "Fiat"
+  },
+  {
+    "codigo": "22",
+    "nome": "Ford"
+  },
+  {
+    "codigo": "254",
+    "nome": "GAC"
+  },
+  {
+    "codigo": "23",
+    "nome": "GM - Chevrolet"
+  },
+  {
+    "codigo": "240",
+    "nome": "GWM"
+  },
+  {
+    "codigo": "152",
+    "nome": "HAFEI"
+  },
+  {
+    "codigo": "214",
+    "nome": "HITECH ELECTRIC"
+  },
+  {
+    "codigo": "25",
+    "nome": "Honda"
+  },
+  {
+    "codigo": "26",
+    "nome": "Hyundai"
+  },
+  {
+    "codigo": "27",
+    "nome": "Isuzu"
+  },
+  {
+    "codigo": "177",
+    "nome": "JAC"
+  },
+  {
+    "codigo": "251",
+    "nome": "Jaecoo"
+  },
+  {
+    "codigo": "28",
+    "nome": "Jaguar"
+  },
+  {
+    "codigo": "29",
+    "nome": "Jeep"
+  },
+  {
+    "codigo": "264",
+    "nome": "Jetour"
+  },
+  {
+    "codigo": "31",
+    "nome": "Kia Motors"
+  },
+  {
+    "codigo": "171",
+    "nome": "LAMBORGHINI"
+  },
+  {
+    "codigo": "33",
+    "nome": "Land Rover"
+  },
+  {
+    "codigo": "34",
+    "nome": "Lexus"
+  },
+  {
+    "codigo": "36",
+    "nome": "Maserati"
+  },
+  {
+    "codigo": "38",
+    "nome": "Mazda"
+  },
+  {
+    "codigo": "39",
+    "nome": "Mercedes-Benz"
+  },
+  {
+    "codigo": "156",
+    "nome": "MINI"
+  },
+  {
+    "codigo": "41",
+    "nome": "Mitsubishi"
+  },
+  {
+    "codigo": "43",
+    "nome": "Nissan"
+  },
+  {
+    "codigo": "252",
+    "nome": "Omoda"
+  },
+  {
+    "codigo": "44",
+    "nome": "Peugeot"
+  },
+  {
+    "codigo": "47",
+    "nome": "Porsche"
+  },
+  {
+    "codigo": "185",
+    "nome": "RAM"
+  },
+  {
+    "codigo": "48",
+    "nome": "Renault"
+  },
+  {
+    "codigo": "195",
+    "nome": "Rolls-Royce"
+  },
+  {
+    "codigo": "49",
+    "nome": "Rover"
+  },
+  {
+    "codigo": "52",
+    "nome": "Seat"
+  },
+  {
+    "codigo": "125",
+    "nome": "SSANGYONG"
+  },
+  {
+    "codigo": "54",
+    "nome": "Subaru"
+  },
+  {
+    "codigo": "55",
+    "nome": "Suzuki"
+  },
+  {
+    "codigo": "56",
+    "nome": "Toyota"
+  },
+  {
+    "codigo": "57",
+    "nome": "Troller"
+  },
+  {
+    "codigo": "58",
+    "nome": "Volvo"
+  },
+  {
+    "codigo": "59",
+    "nome": "VW - VolksWagen"
+  }
+]

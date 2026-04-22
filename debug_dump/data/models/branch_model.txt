@@ -1,0 +1,90 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: 
+   3: class BranchModel {
+   4:   final String id;
+   5:   final String name;
+   6:   final String address;
+   7:   final String phone;
+   8:   final String city;
+   9:   final String state;
+  10:   final double latitude;
+  11:   final double longitude;
+  12:   final bool isActive;
+  13:   final DateTime createdAt;
+  14:   final DateTime updatedAt;
+  15: 
+  16:   BranchModel({
+  17:     required this.id,
+  18:     required this.name,
+  19:     required this.address,
+  20:     required this.phone,
+  21:     required this.city,
+  22:     required this.state,
+  23:     required this.latitude,
+  24:     required this.longitude,
+  25:     required this.isActive,
+  26:     required this.createdAt,
+  27:     required this.updatedAt,
+  28:   });
+  29: 
+  30:   factory BranchModel.fromFirestore(DocumentSnapshot doc) {
+  31:     final data = doc.data() as Map<String, dynamic>;
+  32:     return BranchModel(
+  33:       id: doc.id,
+  34:       name: data['name'] ?? '',
+  35:       address: data['address'] ?? '',
+  36:       phone: data['phone'] ?? '',
+  37:       city: data['city'] ?? '',
+  38:       state: data['state'] ?? '',
+  39:       latitude: (data['latitude'] ?? 0.0).toDouble(),
+  40:       longitude: (data['longitude'] ?? 0.0).toDouble(),
+  41:       isActive: data['is_active'] ?? true,
+  42:       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  43:       updatedAt: (data['updated_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  44:     );
+  45:   }
+  46: 
+  47:   Map<String, dynamic> toFirestore() {
+  48:     return {
+  49:       'name': name,
+  50:       'address': address,
+  51:       'phone': phone,
+  52:       'city': city,
+  53:       'state': state,
+  54:       'latitude': latitude,
+  55:       'longitude': longitude,
+  56:       'is_active': isActive,
+  57:       'created_at': FieldValue.serverTimestamp(),
+  58:       'updated_at': FieldValue.serverTimestamp(),
+  59:     };
+  60:   }
+  61: 
+  62:   BranchModel copyWith({
+  63:     String? id,
+  64:     String? name,
+  65:     String? address,
+  66:     String? phone,
+  67:     String? city,
+  68:     String? state,
+  69:     double? latitude,
+  70:     double? longitude,
+  71:     bool? isActive,
+  72:     DateTime? createdAt,
+  73:     DateTime? updatedAt,
+  74:   }) {
+  75:     return BranchModel(
+  76:       id: id ?? this.id,
+  77:       name: name ?? this.name,
+  78:       address: address ?? this.address,
+  79:       phone: phone ?? this.phone,
+  80:       city: city ?? this.city,
+  81:       state: state ?? this.state,
+  82:       latitude: latitude ?? this.latitude,
+  83:       longitude: longitude ?? this.longitude,
+  84:       isActive: isActive ?? this.isActive,
+  85:       createdAt: createdAt ?? this.createdAt,
+  86:       updatedAt: updatedAt ?? this.updatedAt,
+  87:     );
+  88:   }
+  89: }
+  90: 

@@ -1,0 +1,60 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:lavamax/core/constants/app_colors.dart';
+   3: import 'package:lavamax/core/constants/app_dimensions.dart';
+   4: import 'package:lavamax/data/models/slot_model.dart';
+   5: import 'package:intl/intl.dart';
+   6: 
+   7: class SlotCard extends StatelessWidget {
+   8:   final SlotModel slot;
+   9:   final bool isSelected;
+  10:   final VoidCallback onTap;
+  11: 
+  12:   const SlotCard({
+  13:     Key? key,
+  14:     required this.slot,
+  15:     required this.isSelected,
+  16:     required this.onTap,
+  17:   }) : super(key: key);
+  18: 
+  19:   @override
+  20:   Widget build(BuildContext context) {
+  21:     final timeFormat = DateFormat('HH:mm');
+  22:     final startTime = timeFormat.format(slot.startTime);
+  23:     final endTime = timeFormat.format(slot.endTime);
+  24: 
+  25:     return GestureDetector(
+  26:       onTap: onTap,
+  27:       child: Container(
+  28:         decoration: BoxDecoration(
+  29:           border: Border.all(
+  30:             color: isSelected ? AppColors.primary : AppColors.grey300,
+  31:             width: isSelected ? 2 : 1,
+  32:           ),
+  33:           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  34:           color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.white,
+  35:         ),
+  36:         padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+  37:         child: Column(
+  38:           mainAxisAlignment: MainAxisAlignment.center,
+  39:           children: [
+  40:             Text(
+  41:               '$startTime - $endTime',
+  42:               style: Theme.of(context).textTheme.titleSmall?.copyWith(
+  43:                 fontWeight: FontWeight.bold,
+  44:                 color: isSelected ? AppColors.primary : AppColors.black,
+  45:               ),
+  46:             ),
+  47:             const SizedBox(height: AppDimensions.paddingSmall),
+  48:             Text(
+  49:               'Disponível',
+  50:               style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  51:                 color: AppColors.success,
+  52:               ),
+  53:             ),
+  54:           ],
+  55:         ),
+  56:       ),
+  57:     );
+  58:   }
+  59: }
+  60: 

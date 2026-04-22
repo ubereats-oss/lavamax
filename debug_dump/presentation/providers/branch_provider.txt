@@ -1,0 +1,16 @@
+   1: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   2: import 'package:lavamax/data/models/branch_model.dart';
+   3: import 'package:lavamax/data/repositories/branch_repository.dart';
+   4: import 'package:lavamax/data/services/firebase_service.dart';
+   5: 
+   6: final branchRepositoryProvider = Provider((ref) {
+   7:   return BranchRepository(FirebaseService().firestore);
+   8: });
+   9: 
+  10: final branchesProvider = FutureProvider((ref) async {
+  11:   final repository = ref.watch(branchRepositoryProvider);
+  12:   return repository.getAllBranches();
+  13: });
+  14: 
+  15: final selectedBranchProvider = StateProvider<BranchModel?>((ref) => null);
+  16: 

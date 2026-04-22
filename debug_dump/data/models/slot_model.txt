@@ -1,0 +1,72 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: 
+   3: class SlotModel {
+   4:   final String id;
+   5:   final String branchId;
+   6:   final DateTime startTime;
+   7:   final DateTime endTime;
+   8:   final bool isAvailable;
+   9:   final String? appointmentId;
+  10:   final DateTime createdAt;
+  11:   final DateTime updatedAt;
+  12: 
+  13:   SlotModel({
+  14:     required this.id,
+  15:     required this.branchId,
+  16:     required this.startTime,
+  17:     required this.endTime,
+  18:     required this.isAvailable,
+  19:     this.appointmentId,
+  20:     required this.createdAt,
+  21:     required this.updatedAt,
+  22:   });
+  23: 
+  24:   factory SlotModel.fromFirestore(DocumentSnapshot doc) {
+  25:     final data = doc.data() as Map<String, dynamic>;
+  26:     return SlotModel(
+  27:       id: doc.id,
+  28:       branchId: data['branch_id'] ?? '',
+  29:       startTime: (data['start_time'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  30:       endTime: (data['end_time'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  31:       isAvailable: data['is_available'] ?? true,
+  32:       appointmentId: data['appointment_id'],
+  33:       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  34:       updatedAt: (data['updated_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  35:     );
+  36:   }
+  37: 
+  38:   Map<String, dynamic> toFirestore() {
+  39:     return {
+  40:       'branch_id': branchId,
+  41:       'start_time': startTime,
+  42:       'end_time': endTime,
+  43:       'is_available': isAvailable,
+  44:       'appointment_id': appointmentId,
+  45:       'created_at': FieldValue.serverTimestamp(),
+  46:       'updated_at': FieldValue.serverTimestamp(),
+  47:     };
+  48:   }
+  49: 
+  50:   SlotModel copyWith({
+  51:     String? id,
+  52:     String? branchId,
+  53:     DateTime? startTime,
+  54:     DateTime? endTime,
+  55:     bool? isAvailable,
+  56:     String? appointmentId,
+  57:     DateTime? createdAt,
+  58:     DateTime? updatedAt,
+  59:   }) {
+  60:     return SlotModel(
+  61:       id: id ?? this.id,
+  62:       branchId: branchId ?? this.branchId,
+  63:       startTime: startTime ?? this.startTime,
+  64:       endTime: endTime ?? this.endTime,
+  65:       isAvailable: isAvailable ?? this.isAvailable,
+  66:       appointmentId: appointmentId ?? this.appointmentId,
+  67:       createdAt: createdAt ?? this.createdAt,
+  68:       updatedAt: updatedAt ?? this.updatedAt,
+  69:     );
+  70:   }
+  71: }
+  72: 

@@ -1,0 +1,189 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   3: import 'package:intl/intl.dart';
+   4: import 'package:uuid/uuid.dart';
+   5: import 'package:lavamax/core/constants/app_colors.dart';
+   6: import 'package:lavamax/core/constants/app_dimensions.dart';
+   7: import 'package:lavamax/core/constants/app_strings.dart';
+   8: import 'package:lavamax/data/models/appointment_model.dart';
+   9: import 'package:lavamax/presentation/providers/appointment_provider.dart';
+  10: import 'package:lavamax/presentation/providers/branch_provider.dart';
+  11: import 'package:lavamax/presentation/providers/service_provider.dart';
+  12: import 'package:lavamax/presentation/providers/slot_provider.dart';
+  13: import 'package:lavamax/presentation/widgets/custom_app_bar.dart';
+  14: 
+  15: class AppointmentConfirmationScreen extends ConsumerStatefulWidget {
+  16:   const AppointmentConfirmationScreen({Key? key}) : super(key: key);
+  17: 
+  18:   @override
+  19:   ConsumerState<AppointmentConfirmationScreen> createState() =>
+  20:       _AppointmentConfirmationScreenState();
+  21: }
+  22: 
+  23: class _AppointmentConfirmationScreenState
+  24:     extends ConsumerState<AppointmentConfirmationScreen> {
+  25:   bool _isLoading = false;
+  26: 
+  27:   @override
+  28:   Widget build(BuildContext context) {
+  29:     final selectedBranch = ref.watch(selectedBranchProvider);
+  30:     final selectedService = ref.watch(selectedServiceProvider);
+  31:     final selectedSlot = ref.watch(selectedSlotProvider);
+  32: 
+  33:     if (selectedBranch == null || selectedService == null || selectedSlot == null) {
+  34:       return Scaffold(
+  35:         appBar: CustomAppBar(title: AppStrings.appointmentDetails),
+  36:         body: const Center(child: Text('Erro: Dados incompletos')),
+  37:       );
+  38:     }
+  39: 
+  40:     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+  41:     final appointmentDateTime = dateFormat.format(selectedSlot.startTime);
+  42: 
+  43:     return Scaffold(
+  44:       appBar: CustomAppBar(
+  45:         title: AppStrings.appointmentDetails,
+  46:         showBackButton: true,
+  47:       ),
+  48:       body: SingleChildScrollView(
+  49:         child: Padding(
+  50:           padding: const EdgeInsets.all(AppDimensions.screenPaddingHorizontal),
+  51:           child: Column(
+  52:             crossAxisAlignment: CrossAxisAlignment.stretch,
+  53:             children: [
+  54:               const SizedBox(height: AppDimensions.paddingLarge),
+  55:               // Confirmation Card
+  56:               Card(
+  57:                 child: Padding(
+  58:                   padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+  59:                   child: Column(
+  60:                     crossAxisAlignment: CrossAxisAlignment.start,
+  61:                     children: [
+  62:                       Text(
+  63:                         'Resumo do Agendamento',
+  64:                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  65:                           fontWeight: FontWeight.bold,
+  66:                         ),
+  67:                       ),
+  68:                       const SizedBox(height: AppDimensions.paddingMedium),
+  69:                       _buildDetailRow(context, 'Filial', selectedBranch.name),
+  70:                       const SizedBox(height: AppDimensions.paddingSmall),
+  71:                       _buildDetailRow(context, 'Serviço', selectedService.name),
+  72:                       const SizedBox(height: AppDimensions.paddingSmall),
+  73:                       _buildDetailRow(context, 'Data e Hora', appointmentDateTime),
+  74:                       const SizedBox(height: AppDimensions.paddingSmall),
+  75:                       _buildDetailRow(
+  76:                         context,
+  77:                         'Duração',
+  78:                         '${selectedService.durationMinutes} minutos',
+  79:                       ),
+  80:                       const SizedBox(height: AppDimensions.paddingSmall),
+  81:                       _buildDetailRow(
+  82:                         context,
+  83:                         'Preço',
+  84:                         'R\$ ${selectedService.price.toStringAsFixed(2)}',
+  85:                       ),
+  86:                     ],
+  87:                   ),
+  88:                 ),
+  89:               ),
+  90:               const SizedBox(height: AppDimensions.paddingLarge),
+  91:               // Confirm Button
+  92:               ElevatedButton(
+  93:                 onPressed: _isLoading ? null : _confirmAppointment,
+  94:                 child: _isLoading
+  95:                     ? const SizedBox(
+  96:                         height: 20,
+  97:                         width: 20,
+  98:                         child: CircularProgressIndicator(
+  99:                           strokeWidth: 2,
+ 100:                           valueColor: AlwaysStoppedAnimation<Color>(
+ 101:                             AppColors.white,
+ 102:                           ),
+ 103:                         ),
+ 104:                       )
+ 105:                     : const Text(AppStrings.confirmAppointment),
+ 106:               ),
+ 107:               const SizedBox(height: AppDimensions.paddingMedium),
+ 108:               // Cancel Button
+ 109:               OutlinedButton(
+ 110:                 onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+ 111:                 child: const Text(AppStrings.cancel),
+ 112:               ),
+ 113:             ],
+ 114:           ),
+ 115:         ),
+ 116:       ),
+ 117:     );
+ 118:   }
+ 119: 
+ 120:   Widget _buildDetailRow(BuildContext context, String label, String value) {
+ 121:     return Row(
+ 122:       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+ 123:       children: [
+ 124:         Text(
+ 125:           label,
+ 126:           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+ 127:             color: AppColors.grey600,
+ 128:           ),
+ 129:         ),
+ 130:         Text(
+ 131:           value,
+ 132:           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+ 133:             fontWeight: FontWeight.bold,
+ 134:           ),
+ 135:         ),
+ 136:       ],
+ 137:     );
+ 138:   }
+ 139: 
+ 140:   Future<void> _confirmAppointment() async {
+ 141:     setState(() => _isLoading = true);
+ 142: 
+ 143:     try {
+ 144:       final selectedBranch = ref.read(selectedBranchProvider);
+ 145:       final selectedService = ref.read(selectedServiceProvider);
+ 146:       final selectedSlot = ref.read(selectedSlotProvider);
+ 147: 
+ 148:       if (selectedBranch == null || selectedService == null || selectedSlot == null) {
+ 149:         throw Exception('Dados incompletos');
+ 150:       }
+ 151: 
+ 152:       // TODO: Get current user ID from auth
+ 153:       const customerId = 'temp_customer_id';
+ 154: 
+ 155:       final appointment = AppointmentModel(
+ 156:         id: const Uuid().v4(),
+ 157:         customerId: customerId,
+ 158:         branchId: selectedBranch.id,
+ 159:         serviceId: selectedService.id,
+ 160:         slotId: selectedSlot.id,
+ 161:         appointmentDate: selectedSlot.startTime,
+ 162:         status: 'pending',
+ 163:         createdAt: DateTime.now(),
+ 164:         updatedAt: DateTime.now(),
+ 165:       );
+ 166: 
+ 167:       final appointmentRepository = ref.read(appointmentRepositoryProvider);
+ 168:       await appointmentRepository.createAppointment(appointment);
+ 169: 
+ 170:       if (mounted) {
+ 171:         ScaffoldMessenger.of(context).showSnackBar(
+ 172:           const SnackBar(content: Text('Agendamento confirmado com sucesso!')),
+ 173:         );
+ 174:         Navigator.of(context).popUntil((route) => route.isFirst);
+ 175:       }
+ 176:     } catch (e) {
+ 177:       if (mounted) {
+ 178:         ScaffoldMessenger.of(context).showSnackBar(
+ 179:           SnackBar(content: Text('Erro ao confirmar agendamento: $e')),
+ 180:         );
+ 181:       }
+ 182:     } finally {
+ 183:       if (mounted) {
+ 184:         setState(() => _isLoading = false);
+ 185:       }
+ 186:     }
+ 187:   }
+ 188: }
+ 189: 

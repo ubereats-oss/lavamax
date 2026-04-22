@@ -1,0 +1,48 @@
+name: lavamax
+description: "App de agendamento de serviços automotivos para LavaMax."
+publish_to: 'none'
+version: 1.0.1+2
+environment:
+  sdk: ^3.11.0
+dependencies:
+  flutter:
+    sdk: flutter
+  # Firebase
+  firebase_core: ^4.4.0
+  cloud_firestore: ^6.1.2
+  firebase_auth: ^6.2.0
+  google_sign_in: ^6.2.0
+  firebase_storage: ^13.0.6
+  # State Management
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+  # UI
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.7
+  # Date/Time
+  intl: ^0.19.0
+  # Utilities
+  image_picker: ^1.1.2
+  uuid: ^4.0.0
+  dio: ^5.3.0
+  share_plus: ^10.0.0
+  # Local Storage
+  shared_preferences: ^2.2.0
+  connectivity_plus: ^6.0.0
+  cupertino_icons: ^1.0.8
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/services_sprite.png
+    - assets/images/
+    - assets/icons/
+    - assets/images/services/
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/lavamax_icon.png"

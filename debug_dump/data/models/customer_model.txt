@@ -1,0 +1,66 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: 
+   3: class CustomerModel {
+   4:   final String id;
+   5:   final String name;
+   6:   final String email;
+   7:   final String phone;
+   8:   final String? profileImageUrl;
+   9:   final DateTime createdAt;
+  10:   final DateTime updatedAt;
+  11: 
+  12:   CustomerModel({
+  13:     required this.id,
+  14:     required this.name,
+  15:     required this.email,
+  16:     required this.phone,
+  17:     this.profileImageUrl,
+  18:     required this.createdAt,
+  19:     required this.updatedAt,
+  20:   });
+  21: 
+  22:   factory CustomerModel.fromFirestore(DocumentSnapshot doc) {
+  23:     final data = doc.data() as Map<String, dynamic>;
+  24:     return CustomerModel(
+  25:       id: doc.id,
+  26:       name: data['name'] ?? '',
+  27:       email: data['email'] ?? '',
+  28:       phone: data['phone'] ?? '',
+  29:       profileImageUrl: data['profile_image_url'],
+  30:       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  31:       updatedAt: (data['updated_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  32:     );
+  33:   }
+  34: 
+  35:   Map<String, dynamic> toFirestore() {
+  36:     return {
+  37:       'name': name,
+  38:       'email': email,
+  39:       'phone': phone,
+  40:       'profile_image_url': profileImageUrl,
+  41:       'created_at': FieldValue.serverTimestamp(),
+  42:       'updated_at': FieldValue.serverTimestamp(),
+  43:     };
+  44:   }
+  45: 
+  46:   CustomerModel copyWith({
+  47:     String? id,
+  48:     String? name,
+  49:     String? email,
+  50:     String? phone,
+  51:     String? profileImageUrl,
+  52:     DateTime? createdAt,
+  53:     DateTime? updatedAt,
+  54:   }) {
+  55:     return CustomerModel(
+  56:       id: id ?? this.id,
+  57:       name: name ?? this.name,
+  58:       email: email ?? this.email,
+  59:       phone: phone ?? this.phone,
+  60:       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+  61:       createdAt: createdAt ?? this.createdAt,
+  62:       updatedAt: updatedAt ?? this.updatedAt,
+  63:     );
+  64:   }
+  65: }
+  66: 

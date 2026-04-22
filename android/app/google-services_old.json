@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "84104652853",
+    "project_id": "lavamaxapp",
+    "storage_bucket": "lavamaxapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:84104652853:android:b17707dafada20bcab297c",
+        "android_client_info": {
+          "package_name": "com.lavamax.lavamax"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC79PpLoMyki_zOMAJC2A95BPb7WXAb5hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

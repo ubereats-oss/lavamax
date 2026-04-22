@@ -1,0 +1,13 @@
+   1: import 'package:flutter/material.dart';
+   2: 
+   3: class MyAppointmentsScreen extends StatelessWidget {
+   4:   const MyAppointmentsScreen({Key? key}) : super(key: key);
+   5: 
+   6:   @override
+   7:   Widget build(BuildContext context) {
+   8:     return Scaffold(
+   9:       appBar: AppBar(title: const Text('Meus Agendamentos')),
+  10:       body: const Center(child: Text('Em desenvolvimento')),
+  11:     );
+  12:   }
+  13: }

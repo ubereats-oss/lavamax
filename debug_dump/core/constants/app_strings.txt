@@ -1,0 +1,47 @@
+   1: class AppStrings {
+   2:   // App
+   3:   static const String appName = 'LavaMax Agendamento';
+   4:   static const String appVersion = '1.0.0';
+   5: 
+   6:   // Home
+   7:   static const String homeTitle = 'Bem-vindo à LavaMax';
+   8:   static const String homeSubtitle = 'Agende seu serviço automotivo';
+   9:   static const String scheduleNow = 'Agendar Agora';
+  10:   static const String myAppointments = 'Meus Agendamentos';
+  11: 
+  12:   // Branch Selection
+  13:   static const String selectBranch = 'Selecione uma Filial';
+  14:   static const String noBranchesAvailable = 'Nenhuma filial disponível';
+  15: 
+  16:   // Service Selection
+  17:   static const String selectService = 'Selecione um Serviço';
+  18:   static const String noServicesAvailable = 'Nenhum serviço disponível';
+  19:   static const String serviceDuration = 'Duração';
+  20:   static const String servicePrice = 'Preço';
+  21: 
+  22:   // Slot Selection
+  23:   static const String selectDateTime = 'Selecione Data e Hora';
+  24:   static const String noSlotsAvailable = 'Nenhum horário disponível';
+  25:   static const String availableSlots = 'Horários Disponíveis';
+  26: 
+  27:   // Appointment
+  28:   static const String confirmAppointment = 'Confirmar Agendamento';
+  29:   static const String appointmentConfirmed = 'Agendamento Confirmado';
+  30:   static const String appointmentCanceled = 'Agendamento Cancelado';
+  31:   static const String cancelAppointment = 'Cancelar Agendamento';
+  32:   static const String appointmentDetails = 'Detalhes do Agendamento';
+  33: 
+  34:   // Common
+  35:   static const String loading = 'Carregando...';
+  36:   static const String error = 'Erro';
+  37:   static const String success = 'Sucesso';
+  38:   static const String back = 'Voltar';
+  39:   static const String next = 'Próximo';
+  40:   static const String cancel = 'Cancelar';
+  41:   static const String confirm = 'Confirmar';
+  42:   static const String save = 'Salvar';
+  43:   static const String delete = 'Deletar';
+  44:   static const String edit = 'Editar';
+  45:   static const String close = 'Fechar';
+  46: }
+  47: 

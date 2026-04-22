@@ -1,0 +1,80 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:google_fonts/google_fonts.dart';
+   3: import 'package:lavamax/core/constants/app_colors.dart';
+   4: import 'package:lavamax/core/constants/app_dimensions.dart';
+   5: 
+   6: class AppTheme {
+   7:   static ThemeData get lightTheme {
+   8:     return ThemeData(
+   9:       useMaterial3: true,
+  10:       brightness: Brightness.light,
+  11:       colorScheme: ColorScheme.fromSeed(
+  12:         seedColor: AppColors.primary,
+  13:         brightness: Brightness.light,
+  14:       ),
+  15:       textTheme: GoogleFonts.robotoTextTheme(),
+  16:       appBarTheme: AppBarTheme(
+  17:         backgroundColor: AppColors.primary,
+  18:         foregroundColor: AppColors.white,
+  19:         elevation: 0,
+  20:         centerTitle: true,
+  21:         titleTextStyle: GoogleFonts.roboto(
+  22:           fontSize: 20,
+  23:           fontWeight: FontWeight.w600,
+  24:           color: AppColors.white,
+  25:         ),
+  26:       ),
+  27:       elevatedButtonTheme: ElevatedButtonThemeData(
+  28:         style: ElevatedButton.styleFrom(
+  29:           backgroundColor: AppColors.primary,
+  30:           foregroundColor: AppColors.white,
+  31:           minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+  32:           shape: RoundedRectangleBorder(
+  33:             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  34:           ),
+  35:           textStyle: GoogleFonts.roboto(
+  36:             fontSize: 16,
+  37:             fontWeight: FontWeight.w600,
+  38:           ),
+  39:         ),
+  40:       ),
+  41:       outlinedButtonTheme: OutlinedButtonThemeData(
+  42:         style: OutlinedButton.styleFrom(
+  43:           foregroundColor: AppColors.primary,
+  44:           minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+  45:           shape: RoundedRectangleBorder(
+  46:             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  47:           ),
+  48:           side: const BorderSide(color: AppColors.primary),
+  49:         ),
+  50:       ),
+  51:       cardTheme: CardThemeData(
+  52:         elevation: AppDimensions.cardElevation,
+  53:         shape: RoundedRectangleBorder(
+  54:           borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+  55:         ),
+  56:       ),
+  57:       inputDecorationTheme: InputDecorationTheme(
+  58:         filled: true,
+  59:         fillColor: AppColors.grey100,
+  60:         border: OutlineInputBorder(
+  61:           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  62:           borderSide: const BorderSide(color: AppColors.grey300),
+  63:         ),
+  64:         enabledBorder: OutlineInputBorder(
+  65:           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  66:           borderSide: const BorderSide(color: AppColors.grey300),
+  67:         ),
+  68:         focusedBorder: OutlineInputBorder(
+  69:           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+  70:           borderSide: const BorderSide(color: AppColors.primary, width: 2),
+  71:         ),
+  72:         contentPadding: const EdgeInsets.symmetric(
+  73:           horizontal: AppDimensions.paddingMedium,
+  74:           vertical: AppDimensions.paddingMedium,
+  75:         ),
+  76:       ),
+  77:     );
+  78:   }
+  79: }
+  80: 

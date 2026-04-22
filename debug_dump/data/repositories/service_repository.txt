@@ -1,0 +1,45 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: import 'package:lavamax/data/models/service_model.dart';
+   3: 
+   4: class ServiceRepository {
+   5:   final FirebaseFirestore _firestore;
+   6: 
+   7:   ServiceRepository(this._firestore);
+   8: 
+   9:   Future<List<ServiceModel>> getAllServices() async {
+  10:     try {
+  11:       final snapshot = await _firestore
+  12:           .collection('services')
+  13:           .where('is_active', isEqualTo: true)
+  14:           .get();
+  15:       
+  16:       return snapshot.docs
+  17:           .map((doc) => ServiceModel.fromFirestore(doc))
+  18:           .toList();
+  19:     } catch (e) {
+  20:       throw Exception('Erro ao buscar serviços: $e');
+  21:     }
+  22:   }
+  23: 
+  24:   Future<ServiceModel?> getServiceById(String serviceId) async {
+  25:     try {
+  26:       final doc = await _firestore.collection('services').doc(serviceId).get();
+  27:       
+  28:       if (doc.exists) {
+  29:         return ServiceModel.fromFirestore(doc);
+  30:       }
+  31:       return null;
+  32:     } catch (e) {
+  33:       throw Exception('Erro ao buscar serviço: $e');
+  34:     }
+  35:   }
+  36: 
+  37:   Future<void> createService(ServiceModel service) async {
+  38:     try {
+  39:       await _firestore.collection('services').doc(service.id).set(service.toFirestore());
+  40:     } catch (e) {
+  41:       throw Exception('Erro ao criar serviço: $e');
+  42:     }
+  43:   }
+  44: }
+  45: 

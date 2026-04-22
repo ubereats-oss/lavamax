@@ -1,0 +1,153 @@
+   1: import 'package:flutter/material.dart';
+   2: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   3: import 'package:intl/intl.dart';
+   4: import 'package:lavamax/core/constants/app_dimensions.dart';
+   5: import 'package:lavamax/core/constants/app_strings.dart';
+   6: import 'package:lavamax/presentation/providers/branch_provider.dart';
+   7: import 'package:lavamax/presentation/providers/slot_provider.dart';
+   8: import 'package:lavamax/presentation/screens/appointment_confirmation_screen.dart';
+   9: import 'package:lavamax/presentation/widgets/custom_app_bar.dart';
+  10: import 'package:lavamax/presentation/widgets/slot_card.dart';
+  11: 
+  12: class SlotSelectionScreen extends ConsumerStatefulWidget {
+  13:   const SlotSelectionScreen({Key? key}) : super(key: key);
+  14: 
+  15:   @override
+  16:   ConsumerState<SlotSelectionScreen> createState() => _SlotSelectionScreenState();
+  17: }
+  18: 
+  19: class _SlotSelectionScreenState extends ConsumerState<SlotSelectionScreen> {
+  20:   late DateTime _selectedDate;
+  21: 
+  22:   @override
+  23:   void initState() {
+  24:     super.initState();
+  25:     _selectedDate = DateTime.now();
+  26:   }
+  27: 
+  28:   @override
+  29:   Widget build(BuildContext context) {
+  30:     final selectedBranch = ref.watch(selectedBranchProvider);
+  31:     final selectedDate = ref.watch(selectedDateProvider);
+  32:     final dateToUse = selectedDate ?? _selectedDate;
+  33: 
+  34:     if (selectedBranch == null) {
+  35:       return Scaffold(
+  36:         appBar: CustomAppBar(title: AppStrings.selectDateTime),
+  37:         body: const Center(child: Text('Erro: Filial não selecionada')),
+  38:       );
+  39:     }
+  40: 
+  41:     final slotsAsync = ref.watch(
+  42:       availableSlotsProvider((selectedBranch.id, dateToUse)),
+  43:     );
+  44: 
+  45:     return Scaffold(
+  46:       appBar: CustomAppBar(
+  47:         title: AppStrings.selectDateTime,
+  48:         showBackButton: true,
+  49:       ),
+  50:       body: SingleChildScrollView(
+  51:         child: Padding(
+  52:           padding: const EdgeInsets.all(AppDimensions.screenPaddingHorizontal),
+  53:           child: Column(
+  54:             crossAxisAlignment: CrossAxisAlignment.stretch,
+  55:             children: [
+  56:               const SizedBox(height: AppDimensions.paddingMedium),
+  57:               // Date Picker
+  58:               Text(
+  59:                 'Selecione a Data',
+  60:                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  61:                   fontWeight: FontWeight.bold,
+  62:                 ),
+  63:               ),
+  64:               const SizedBox(height: AppDimensions.paddingMedium),
+  65:               ElevatedButton.icon(
+  66:                 onPressed: () async {
+  67:                   final pickedDate = await showDatePicker(
+  68:                     context: context,
+  69:                     initialDate: dateToUse,
+  70:                     firstDate: DateTime.now(),
+  71:                     lastDate: DateTime.now().add(const Duration(days: 30)),
+  72:                   );
+  73:                   if (pickedDate != null) {
+  74:                     ref.read(selectedDateProvider.notifier).state = pickedDate;
+  75:                   }
+  76:                 },
+  77:                 icon: const Icon(Icons.calendar_today),
+  78:                 label: Text(DateFormat('dd/MM/yyyy').format(dateToUse)),
+  79:               ),
+  80:               const SizedBox(height: AppDimensions.paddingLarge),
+  81:               // Slots
+  82:               Text(
+  83:                 AppStrings.availableSlots,
+  84:                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  85:                   fontWeight: FontWeight.bold,
+  86:                 ),
+  87:               ),
+  88:               const SizedBox(height: AppDimensions.paddingMedium),
+  89:               slotsAsync.when(
+  90:                 data: (slots) {
+  91:                   if (slots.isEmpty) {
+  92:                     return Center(
+  93:                       child: Text(AppStrings.noSlotsAvailable),
+  94:                     );
+  95:                   }
+  96: 
+  97:                   return GridView.builder(
+  98:                     shrinkWrap: true,
+  99:                     physics: const NeverScrollableScrollPhysics(),
+ 100:                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+ 101:                       crossAxisCount: 2,
+ 102:                       crossAxisSpacing: AppDimensions.paddingMedium,
+ 103:                       mainAxisSpacing: AppDimensions.paddingMedium,
+ 104:                       childAspectRatio: 1.2,
+ 105:                     ),
+ 106:                     itemCount: slots.length,
+ 107:                     itemBuilder: (context, index) {
+ 108:                       final slot = slots[index];
+ 109:                       final selectedSlot = ref.watch(selectedSlotProvider);
+ 110:                       final isSelected = selectedSlot?.id == slot.id;
+ 111: 
+ 112:                       return SlotCard(
+ 113:                         slot: slot,
+ 114:                         isSelected: isSelected,
+ 115:                         onTap: () {
+ 116:                           ref.read(selectedSlotProvider.notifier).state = slot;
+ 117:                         },
+ 118:                       );
+ 119:                     },
+ 120:                   );
+ 121:                 },
+ 122:                 loading: () => const Center(child: CircularProgressIndicator()),
+ 123:                 error: (error, stackTrace) => Center(
+ 124:                   child: Text('Erro: $error'),
+ 125:                 ),
+ 126:               ),
+ 127:               const SizedBox(height: AppDimensions.paddingLarge),
+ 128:               // Confirm Button
+ 129:               ElevatedButton(
+ 130:                 onPressed: () {
+ 131:                   final selectedSlot = ref.read(selectedSlotProvider);
+ 132:                   if (selectedSlot != null) {
+ 133:                     Navigator.of(context).push(
+ 134:                       MaterialPageRoute(
+ 135:                         builder: (context) => const AppointmentConfirmationScreen(),
+ 136:                       ),
+ 137:                     );
+ 138:                   } else {
+ 139:                     ScaffoldMessenger.of(context).showSnackBar(
+ 140:                       const SnackBar(content: Text('Selecione um horário')),
+ 141:                     );
+ 142:                   }
+ 143:                 },
+ 144:                 child: const Text(AppStrings.next),
+ 145:               ),
+ 146:             ],
+ 147:           ),
+ 148:         ),
+ 149:       ),
+ 150:     );
+ 151:   }
+ 152: }
+ 153: 

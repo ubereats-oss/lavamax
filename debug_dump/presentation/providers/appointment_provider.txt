@@ -1,0 +1,14 @@
+   1: import 'package:flutter_riverpod/flutter_riverpod.dart';
+   2: import 'package:lavamax/data/models/appointment_model.dart';
+   3: import 'package:lavamax/data/repositories/appointment_repository.dart';
+   4: import 'package:lavamax/data/services/firebase_service.dart';
+   5: 
+   6: final appointmentRepositoryProvider = Provider((ref) {
+   7:   return AppointmentRepository(FirebaseService().firestore);
+   8: });
+   9: 
+  10: final customerAppointmentsProvider = FutureProvider.family<List<AppointmentModel>, String>((ref, customerId) async {
+  11:   final repository = ref.watch(appointmentRepositoryProvider);
+  12:   return repository.getAppointmentsByCustomer(customerId);
+  13: });
+  14: 

@@ -1,0 +1,84 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: 
+   3: class AppointmentModel {
+   4:   final String id;
+   5:   final String customerId;
+   6:   final String branchId;
+   7:   final String serviceId;
+   8:   final String slotId;
+   9:   final DateTime appointmentDate;
+  10:   final String status; // pending, confirmed, completed, canceled
+  11:   final String? notes;
+  12:   final DateTime createdAt;
+  13:   final DateTime updatedAt;
+  14: 
+  15:   AppointmentModel({
+  16:     required this.id,
+  17:     required this.customerId,
+  18:     required this.branchId,
+  19:     required this.serviceId,
+  20:     required this.slotId,
+  21:     required this.appointmentDate,
+  22:     required this.status,
+  23:     this.notes,
+  24:     required this.createdAt,
+  25:     required this.updatedAt,
+  26:   });
+  27: 
+  28:   factory AppointmentModel.fromFirestore(DocumentSnapshot doc) {
+  29:     final data = doc.data() as Map<String, dynamic>;
+  30:     return AppointmentModel(
+  31:       id: doc.id,
+  32:       customerId: data['customer_id'] ?? '',
+  33:       branchId: data['branch_id'] ?? '',
+  34:       serviceId: data['service_id'] ?? '',
+  35:       slotId: data['slot_id'] ?? '',
+  36:       appointmentDate: (data['appointment_date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  37:       status: data['status'] ?? 'pending',
+  38:       notes: data['notes'],
+  39:       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  40:       updatedAt: (data['updated_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+  41:     );
+  42:   }
+  43: 
+  44:   Map<String, dynamic> toFirestore() {
+  45:     return {
+  46:       'customer_id': customerId,
+  47:       'branch_id': branchId,
+  48:       'service_id': serviceId,
+  49:       'slot_id': slotId,
+  50:       'appointment_date': appointmentDate,
+  51:       'status': status,
+  52:       'notes': notes,
+  53:       'created_at': FieldValue.serverTimestamp(),
+  54:       'updated_at': FieldValue.serverTimestamp(),
+  55:     };
+  56:   }
+  57: 
+  58:   AppointmentModel copyWith({
+  59:     String? id,
+  60:     String? customerId,
+  61:     String? branchId,
+  62:     String? serviceId,
+  63:     String? slotId,
+  64:     DateTime? appointmentDate,
+  65:     String? status,
+  66:     String? notes,
+  67:     DateTime? createdAt,
+  68:     DateTime? updatedAt,
+  69:   }) {
+  70:     return AppointmentModel(
+  71:       id: id ?? this.id,
+  72:       customerId: customerId ?? this.customerId,
+  73:       branchId: branchId ?? this.branchId,
+  74:       serviceId: serviceId ?? this.serviceId,
+  75:       slotId: slotId ?? this.slotId,
+  76:       appointmentDate: appointmentDate ?? this.appointmentDate,
+  77:       status: status ?? this.status,
+  78:       notes: notes ?? this.notes,
+  79:       createdAt: createdAt ?? this.createdAt,
+  80:       updatedAt: updatedAt ?? this.updatedAt,
+  81:     );
+  82:   }
+  83: }
+  84: 

@@ -1,0 +1,53 @@
+   1: import 'package:cloud_firestore/cloud_firestore.dart';
+   2: import 'package:lavamax/data/models/branch_model.dart';
+   3: 
+   4: class BranchRepository {
+   5:   final FirebaseFirestore _firestore;
+   6: 
+   7:   BranchRepository(this._firestore);
+   8: 
+   9:   Future<List<BranchModel>> getAllBranches() async {
+  10:     try {
+  11:       final snapshot = await _firestore
+  12:           .collection('branches')
+  13:           .where('is_active', isEqualTo: true)
+  14:           .get();
+  15:       
+  16:       return snapshot.docs
+  17:           .map((doc) => BranchModel.fromFirestore(doc))
+  18:           .toList();
+  19:     } catch (e) {
+  20:       throw Exception('Erro ao buscar filiais: $e');
+  21:     }
+  22:   }
+  23: 
+  24:   Future<BranchModel?> getBranchById(String branchId) async {
+  25:     try {
+  26:       final doc = await _firestore.collection('branches').doc(branchId).get();
+  27:       
+  28:       if (doc.exists) {
+  29:         return BranchModel.fromFirestore(doc);
+  30:       }
+  31:       return null;
+  32:     } catch (e) {
+  33:       throw Exception('Erro ao buscar filial: $e');
+  34:     }
+  35:   }
+  36: 
+  37:   Future<void> createBranch(BranchModel branch) async {
+  38:     try {
+  39:       await _firestore.collection('branches').doc(branch.id).set(branch.toFirestore());
+  40:     } catch (e) {
+  41:       throw Exception('Erro ao criar filial: $e');
+  42:     }
+  43:   }
+  44: 
+  45:   Future<void> updateBranch(BranchModel branch) async {
+  46:     try {
+  47:       await _firestore.collection('branches').doc(branch.id).update(branch.toFirestore());
+  48:     } catch (e) {
+  49:       throw Exception('Erro ao atualizar filial: $e');
+  50:     }
+  51:   }
+  52: }
+  53: 
