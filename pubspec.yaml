@@ -1,7 +1,7 @@
 name: lavamax
 description: "App de agendamento de serviços automotivos para LavaMax."
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.1+3
 environment:
   sdk: ^3.11.0
 dependencies:
