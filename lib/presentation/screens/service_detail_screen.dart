@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lavamax/core/constants/app_colors.dart';
@@ -13,8 +14,13 @@ import 'package:lavamax/presentation/widgets/sprite_icon.dart';
 
 class ServiceDetailScreen extends ConsumerWidget {
   final ServiceModel service;
+  final bool isGuestMode;
 
-  const ServiceDetailScreen({super.key, required this.service});
+  const ServiceDetailScreen({
+    super.key,
+    required this.service,
+    this.isGuestMode = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,7 +132,11 @@ class ServiceDetailScreen extends ConsumerWidget {
   }
 
   void _agendar(BuildContext context, WidgetRef ref) {
-    // Pré-seleciona o serviço e reseta o restante do fluxo
+    if (isGuestMode || FirebaseAuth.instance.currentUser == null) {
+      _showLoginRequired(context);
+      return;
+    }
+
     ref.read(selectedServiceProvider.notifier).state = service;
     ref.read(selectedBranchProvider.notifier).state = null;
     ref.read(selectedDateProvider.notifier).state = null;
@@ -137,6 +147,31 @@ class ServiceDetailScreen extends ConsumerWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const VehicleSelectionScreen(isFromBooking: true),
+      ),
+    );
+  }
+
+  void _showLoginRequired(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Login necessário'),
+        content: const Text(
+          'Para agendar um serviço, você precisa entrar na sua conta ou criar uma gratuitamente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Agora não'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: const Text('Entrar / Cadastrar'),
+          ),
+        ],
       ),
     );
   }

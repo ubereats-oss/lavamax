@@ -10,6 +10,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
+import 'services_catalog_screen.dart';
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
   @override
@@ -277,8 +278,16 @@ class _AuthScreenState extends State<AuthScreen> {
         nonce: nonce,
       );
 
+      final idToken = appleCredential.identityToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception(
+          'Apple não retornou um token de identidade. '
+          'Verifique suas configurações de conta Apple e tente novamente.',
+        );
+      }
+
       final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
+        idToken: idToken,
         rawNonce: rawNonce,
       );
 
@@ -315,20 +324,57 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erro ao entrar com Apple: ${e.message}')),
-        );
-      }
+      if (!mounted) return;
+      final msg = switch (e.code) {
+        AuthorizationErrorCode.failed =>
+          'Falha na autenticação com Apple. Verifique as configurações da sua conta Apple ID.',
+        AuthorizationErrorCode.invalidResponse =>
+          'Resposta inválida da Apple. Tente novamente.',
+        AuthorizationErrorCode.notHandled =>
+          'A autenticação Apple não pôde ser concluída. Tente novamente.',
+        AuthorizationErrorCode.notInteractive =>
+          'A autenticação Apple requer interação do usuário. Tente novamente.',
+        AuthorizationErrorCode.unknown =>
+          'Erro desconhecido na autenticação Apple. Tente novamente.',
+        _ => 'Erro ao entrar com Apple: ${e.message}',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 5)),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final msg = switch (e.code) {
+        'invalid-credential' =>
+          'Credencial Apple inválida. Tente novamente.',
+        'user-disabled' => 'Esta conta foi desabilitada.',
+        'operation-not-allowed' =>
+          'Login com Apple não está habilitado neste app.',
+        'network-request-failed' =>
+          'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+        _ => e.message ?? 'Erro de autenticação com Apple.',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 5)),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro: $e')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _exploreAsGuest() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ServicesCatalogScreen(isGuestMode: true),
+      ),
+    );
   }
 
   Future<void> _forgotPassword() async {
@@ -659,6 +705,17 @@ class _AuthScreenState extends State<AuthScreen> {
                       _isLogin
                           ? 'Nao tem conta? Cadastre-se'
                           : 'Ja tem conta? Entre',
+                    ),
+                  ),
+                  // ── Explorar sem login ──────────────────────────────
+                  TextButton(
+                    onPressed: _loading ? null : _exploreAsGuest,
+                    child: Text(
+                      'Explorar serviços sem login',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ],

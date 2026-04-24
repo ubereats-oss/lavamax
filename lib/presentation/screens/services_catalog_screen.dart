@@ -8,7 +8,9 @@ import 'package:lavamax/presentation/screens/service_detail_screen.dart';
 import 'package:lavamax/presentation/widgets/sprite_icon.dart';
 
 class ServicesCatalogScreen extends ConsumerWidget {
-  const ServicesCatalogScreen({super.key});
+  final bool isGuestMode;
+
+  const ServicesCatalogScreen({super.key, this.isGuestMode = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +32,48 @@ class ServicesCatalogScreen extends ConsumerWidget {
         ),
         centerTitle: true,
       ),
-      body: servicesAsync.when(
+      body: Column(
+        children: [
+          if (isGuestMode)
+            Material(
+              color: AppColors.accentDark,
+              child: InkWell(
+                onTap: () => Navigator.of(context).pop(),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_outline,
+                          color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Para agendar, faça login ou crie uma conta.',
+                          style: TextStyle(color: Colors.white, fontSize: 13),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white70),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                        child: const Text('Entrar'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(
+            child: servicesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Column(
@@ -69,10 +112,16 @@ class ServicesCatalogScreen extends ConsumerWidget {
             ),
             itemCount: sorted.length,
             itemBuilder: (context, index) {
-              return _ServiceCard(service: sorted[index]);
+              return _ServiceCard(
+                service: sorted[index],
+                isGuestMode: isGuestMode,
+              );
             },
           );
         },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -80,8 +129,9 @@ class ServicesCatalogScreen extends ConsumerWidget {
 
 class _ServiceCard extends StatelessWidget {
   final ServiceModel service;
+  final bool isGuestMode;
 
-  const _ServiceCard({required this.service});
+  const _ServiceCard({required this.service, this.isGuestMode = false});
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +147,8 @@ class _ServiceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ServiceDetailScreen(service: service),
+            builder: (_) =>
+                ServiceDetailScreen(service: service, isGuestMode: isGuestMode),
           ),
         ),
         child: Padding(
