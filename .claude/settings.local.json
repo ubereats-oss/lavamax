@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:lavamaxstudiocar.com.br)",
+      "Bash(node fix_services.js)"
+    ]
+  }
+}
