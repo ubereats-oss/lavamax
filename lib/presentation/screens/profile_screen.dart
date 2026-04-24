@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../providers/user_provider.dart';
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -67,6 +72,159 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     });
   }
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+        length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
+
+  String _sha256ofString(String input) =>
+      sha256.convert(utf8.encode(input)).toString();
+
+  Future<AuthCredential?> _buildCredentialForReauth(User user) async {
+    final providers =
+        user.providerData.map((p) => p.providerId).toList();
+
+    if (providers.contains('apple.com')) {
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+      final apple = await SignInWithApple.getAppleIDCredential(
+        scopes: [],
+        nonce: nonce,
+      );
+      return OAuthProvider('apple.com').credential(
+        idToken: apple.identityToken,
+        rawNonce: rawNonce,
+      );
+    }
+
+    if (providers.contains('google.com')) {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return null;
+      final googleAuth = await googleUser.authentication;
+      return GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+    }
+
+    // E-mail / senha
+    final passCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirme sua senha'),
+        content: TextField(
+          controller: passCtrl,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Senha atual',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || passCtrl.text.isEmpty) return null;
+    return EmailAuthProvider.credential(
+      email: user.email!,
+      password: passCtrl.text,
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir conta'),
+        content: const Text(
+          'Sua conta e todos os seus dados pessoais serão removidos permanentemente.\n\n'
+          'Agendamentos já realizados permanecem no histórico do estabelecimento.\n\n'
+          'Deseja continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Excluir conta'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _loading = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final credential = await _buildCredentialForReauth(user);
+      if (credential == null) return; // usuário cancelou
+
+      await user.reauthenticateWithCredential(credential);
+
+      final db = FirebaseFirestore.instance;
+      final userDoc = await db.collection('users').doc(user.uid).get();
+
+      // Remove identifier
+      if (userDoc.exists) {
+        final identifier =
+            (userDoc.data()?['identifier'] as String? ?? '').trim();
+        if (identifier.isNotEmpty) {
+          await db.collection('identifiers').doc(identifier).delete();
+        }
+      }
+
+      // Remove documento do usuário
+      await db.collection('users').doc(user.uid).delete();
+
+      // Remove conta Firebase Auth
+      await user.delete();
+
+      // Firebase Auth signOut automático após delete; não há mais usuário
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final msg = switch (e.code) {
+        'wrong-password' || 'invalid-credential' => 'Senha incorreta.',
+        'requires-recent-login' =>
+          'Saia e entre novamente antes de excluir a conta.',
+        _ => e.message ?? 'Erro ao excluir conta.',
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro Apple: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final user = FirebaseAuth.instance.currentUser;
@@ -374,6 +532,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           : const Text('Salvar alteracoes'),
                     ),
                   ),
+                  const SizedBox(height: 40),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _loading ? null : _deleteAccount,
+                      icon: const Icon(Icons.delete_forever_outlined,
+                          color: Colors.red),
+                      label: const Text(
+                        'Excluir minha conta',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

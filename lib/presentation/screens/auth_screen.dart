@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
 class AuthScreen extends StatefulWidget {
@@ -245,6 +250,87 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) setState(() => _loading = false);
     }
   }
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+        length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _loading = true);
+    try {
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+
+      final userCred =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+
+      final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
+      if (isNew) {
+        final user = userCred.user!;
+        final email = user.email ?? appleCredential.email ?? '';
+        final firstName = appleCredential.givenName ?? '';
+        final lastName = appleCredential.familyName ?? '';
+        final name = [firstName, lastName]
+            .where((s) => s.isNotEmpty)
+            .join(' ')
+            .trim();
+
+        await UserRepository(FirebaseFirestore.instance).createUser(
+          UserModel(
+            uid: user.uid,
+            name: name.isNotEmpty ? name : 'Usuário Apple',
+            email: email,
+            role: 'user',
+            identifier: email.toLowerCase(),
+            identifierType: 'email',
+          ),
+        );
+        if (email.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('identifiers')
+              .doc(email.toLowerCase())
+              .set({'email': email, 'identifier_type': 'email'});
+        }
+      }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Erro ao entrar com Apple: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _forgotPassword() async {
     // Mostra campos distintos dependendo do tipo de identificador
     final identifierCtrl = TextEditingController(
@@ -552,6 +638,19 @@ class _AuthScreenState extends State<AuthScreen> {
                       label: const Text('Continuar com Google'),
                     ),
                   ),
+                  // ── Botão Apple (apenas iOS) ────────────────────────
+                  if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: SignInWithAppleButton(
+                        onPressed: _loading ? () {} : _signInWithApple,
+                        style: SignInWithAppleButtonStyle.black,
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(8)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   // ── Alternar login / cadastro ──────────────────────
                   TextButton(

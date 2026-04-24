@@ -1,7 +1,7 @@
 name: lavamax
 description: "App de agendamento de serviços automotivos para LavaMax."
 publish_to: 'none'
-version: 1.0.1+4
+version: 1.0.2+5
 environment:
   sdk: ^3.11.0
 dependencies:
@@ -30,6 +30,8 @@ dependencies:
   shared_preferences: ^2.2.0
   connectivity_plus: ^6.0.0
   cupertino_icons: ^1.0.8
+  sign_in_with_apple: ^6.1.0
+  crypto: ^3.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
