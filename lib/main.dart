@@ -16,6 +16,14 @@ void main() {
       FlutterError.presentError(details);
     };
 
+    // DIAGNÓSTICO: mostra spinner antes do Firebase para confirmar que a janela existe
+    runApp(const MaterialApp(
+      home: Scaffold(
+        backgroundColor: Colors.blue,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      ),
+    ));
+
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
