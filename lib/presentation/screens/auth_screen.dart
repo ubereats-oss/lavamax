@@ -276,6 +276,12 @@ class _AuthScreenState extends State<AuthScreen> {
           AppleIDAuthorizationScopes.fullName,
         ],
         nonce: nonce,
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: 'com.lavamax.lavamax.signin',
+          redirectUri: Uri.parse(
+            'https://lavamaxapp.firebaseapp.com/__/auth/handler',
+          ),
+        ),
       );
 
       final idToken = appleCredential.identityToken;
