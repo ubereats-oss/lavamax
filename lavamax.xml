@@ -56,6 +56,7 @@ ios/Podfile
 ios/Runner/AppDelegate.swift
 ios/Runner/GoogleService-Info.plist
 ios/Runner/Info.plist
+ios/Runner/Runner.entitlements
 lib/core/constants/app_colors.dart
 lib/core/constants/app_dimensions.dart
 lib/core/constants/app_strings.dart
@@ -447,42 +448,98 @@ This section contains the contents of the repository's files.
 </file>
 
 <file path="firestore.rules">
- 1: rules_version='2'
+ 1: rules_version = '2';
  2: service cloud.firestore {
  3:   match /databases/{database}/documents {
- 4:     match /{document=**} {
- 5:       // This rule allows anyone with your database reference to view, edit,
- 6:       // and delete all data in your database. It is useful for getting
- 7:       // started, but it is configured to expire after 30 days because it
- 8:       // leaves your app open to attackers. At that time, all client
- 9:       // requests to your database will be denied.
-10:       //
-11:       // Make sure to write security rules for your app before that time, or
-12:       // else all client requests to your database will be denied until you
-13:       // update your rules.
-14:       allow read, write: if request.time < timestamp.date(2026, 3, 29);
-15:     }
-16:   }
-17: }
-</file>
-
-<file path="ios/Runner/AppDelegate.swift">
- 1: import Flutter
- 2: import UIKit
- 3: 
- 4: @main
- 5: @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
- 6:   override func application(
- 7:     _ application: UIApplication,
- 8:     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
- 9:   ) -> Bool {
-10:     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-11:   }
-12: 
-13:   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-14:     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-15:   }
-16: }
+ 4: 
+ 5:     function isAuth() {
+ 6:       return request.auth != null;
+ 7:     }
+ 8: 
+ 9:     function isMaster() {
+10:       return isAuth()
+11:         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'master';
+12:     }
+13: 
+14:     function isOwner(uid) {
+15:       return isAuth() && request.auth.uid == uid;
+16:     }
+17: 
+18:     // Identifiers: publicly readable (used for login lookup before auth),
+19:     // writable only by authenticated users (registration / account deletion).
+20:     match /identifiers/{identifier} {
+21:       allow read: if true;
+22:       allow write: if isAuth();
+23:     }
+24: 
+25:     // Users: each user reads/writes their own doc; master reads/writes all.
+26:     // Role field is immutable by the owner — only master can change it.
+27:     match /users/{uid} {
+28:       allow read: if isOwner(uid) || isMaster();
+29:       allow create: if isAuth();
+30:       allow update: if isOwner(uid)
+31:                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+32:                     || isMaster();
+33:       allow delete: if isOwner(uid) || isMaster();
+34: 
+35:       match /vehicles/{vehicleId} {
+36:         allow read, write: if isOwner(uid) || isMaster();
+37:       }
+38:     }
+39: 
+40:     // Branches: readable by any authenticated user; writable only by master.
+41:     match /branches/{branchId} {
+42:       allow read: if isAuth();
+43:       allow write: if isMaster();
+44:     }
+45: 
+46:     // Services: readable by any authenticated user; writable only by master.
+47:     match /services/{serviceId} {
+48:       allow read: if isAuth();
+49:       allow write: if isMaster();
+50:     }
+51: 
+52:     // Vehicle brands (and their models subcollection): same policy as services.
+53:     match /vehicle_brands/{brandId} {
+54:       allow read: if isAuth();
+55:       allow write: if isMaster();
+56: 
+57:       match /models/{modelId} {
+58:         allow read: if isAuth();
+59:         allow write: if isMaster();
+60:       }
+61:     }
+62: 
+63:     // Consultants: readable by authenticated; writable by master.
+64:     match /consultants/{consultantId} {
+65:       allow read: if isAuth();
+66:       allow write: if isMaster();
+67:     }
+68: 
+69:     // Slots: readable/writable by any authenticated user
+70:     // (booking transactions update slots atomically).
+71:     match /slots/{slotId} {
+72:       allow read, write: if isAuth();
+73:     }
+74: 
+75:     // Appointments: readable/writable by any authenticated user.
+76:     match /appointments/{appointmentId} {
+77:       allow read, write: if isAuth();
+78:     }
+79: 
+80:     // Credits: readable/writable by any authenticated user
+81:     // (cancellation flow grants credits back to the user).
+82:     match /credits/{creditId} {
+83:       allow read, write: if isAuth();
+84:     }
+85: 
+86:     // Config: readable by authenticated; writable only by master.
+87:     match /config/{docId} {
+88:       allow read: if isAuth();
+89:       allow write: if isMaster();
+90:     }
+91:   }
+92: }
 </file>
 
 <file path="ios/Runner/GoogleService-Info.plist">
@@ -522,6 +579,19 @@ This section contains the contents of the repository's files.
 34: 	<string>1:84104652853:ios:9f7fcf34e888c8acab297c</string>
 35: </dict>
 36: </plist>
+</file>
+
+<file path="ios/Runner/Runner.entitlements">
+ 1: <?xml version="1.0" encoding="UTF-8"?>
+ 2: <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ 3: <plist version="1.0">
+ 4: <dict>
+ 5: 	<key>com.apple.developer.applesignin</key>
+ 6: 	<array>
+ 7: 		<string>Default</string>
+ 8: 	</array>
+ 9: </dict>
+10: </plist>
 </file>
 
 <file path="lib/core/constants/app_colors.dart">
@@ -2222,47 +2292,6 @@ This section contains the contents of the repository's files.
 73:     storageBucket: 'lavamaxapp.firebasestorage.app',
 74:   );
 75: }
-</file>
-
-<file path="lib/main.dart">
- 1: import 'package:firebase_core/firebase_core.dart';
- 2: import 'package:flutter/material.dart';
- 3: import 'package:flutter_riverpod/flutter_riverpod.dart';
- 4: import 'package:lavamax/core/theme/app_theme.dart';
- 5: import 'package:lavamax/firebase_options.dart';
- 6: import 'package:lavamax/presentation/providers/auth_provider.dart';
- 7: import 'package:lavamax/presentation/screens/auth_screen.dart';
- 8: import 'package:lavamax/presentation/screens/home_screen.dart';
- 9: void main() async {
-10:   WidgetsFlutterBinding.ensureInitialized();
-11:   await Firebase.initializeApp(
-12:     options: DefaultFirebaseOptions.currentPlatform,
-13:   );
-14:   runApp(
-15:     const ProviderScope(
-16:       child: LavaMaxApp(),
-17:     ),
-18:   );
-19: }
-20: class LavaMaxApp extends ConsumerWidget {
-21:   const LavaMaxApp({super.key});
-22:   @override
-23:   Widget build(BuildContext context, WidgetRef ref) {
-24:     final authState = ref.watch(authStateProvider);
-25:     return MaterialApp(
-26:       title: 'LavaMax',
-27:       debugShowCheckedModeBanner: false,
-28:       theme: AppTheme.lightTheme,
-29:       home: authState.when(
-30:         data: (user) => user != null ? const HomeScreen() : const AuthScreen(),
-31:         loading: () => const Scaffold(
-32:           body: Center(child: CircularProgressIndicator()),
-33:         ),
-34:         error: (_, _) => const AuthScreen(),
-35:       ),
-36:     );
-37:   }
-38: }
 </file>
 
 <file path="lib/presentation/providers/appointment_provider.dart">
@@ -6154,582 +6183,6 @@ This section contains the contents of the repository's files.
 343: }
 </file>
 
-<file path="lib/presentation/screens/auth_screen.dart">
-  1: import 'package:cloud_firestore/cloud_firestore.dart';
-  2: import 'package:firebase_auth/firebase_auth.dart';
-  3: import 'package:flutter/material.dart';
-  4: import 'package:flutter/services.dart';
-  5: import 'package:google_sign_in/google_sign_in.dart';
-  6: import '../../data/models/user_model.dart';
-  7: import '../../data/repositories/user_repository.dart';
-  8: class AuthScreen extends StatefulWidget {
-  9:   const AuthScreen({super.key});
- 10:   @override
- 11:   State<AuthScreen> createState() => _AuthScreenState();
- 12: }
- 13: class _AuthScreenState extends State<AuthScreen> {
- 14:   final _formKey = GlobalKey<FormState>();
- 15:   final _nameCtrl = TextEditingController();
- 16:   final _emailLoginCtrl = TextEditingController();
- 17:   final _emailRegisterCtrl = TextEditingController();
- 18:   final _identifierCtrl = TextEditingController();
- 19:   final _passCtrl = TextEditingController();
- 20:   bool _isLogin = true;
- 21:   bool _loading = false;
- 22:   bool _passVisible = false;
- 23:   // 'email' | 'cpf' | 'phone'
- 24:   String _identifierType = 'cpf';
- 25:   @override
- 26:   void dispose() {
- 27:     _nameCtrl.dispose();
- 28:     _emailLoginCtrl.dispose();
- 29:     _emailRegisterCtrl.dispose();
- 30:     _identifierCtrl.dispose();
- 31:     _passCtrl.dispose();
- 32:     super.dispose();
- 33:   }
- 34:   String _identifierLabel() {
- 35:     switch (_identifierType) {
- 36:       case 'cpf':
- 37:         return 'CPF';
- 38:       case 'phone':
- 39:         return 'Telefone';
- 40:       default:
- 41:         return 'E-mail';
- 42:     }
- 43:   }
- 44:   IconData _identifierIcon() {
- 45:     switch (_identifierType) {
- 46:       case 'cpf':
- 47:         return Icons.badge_outlined;
- 48:       case 'phone':
- 49:         return Icons.phone_outlined;
- 50:       default:
- 51:         return Icons.email_outlined;
- 52:     }
- 53:   }
- 54:   TextInputType _identifierKeyboard() {
- 55:     switch (_identifierType) {
- 56:       case 'cpf':
- 57:       case 'phone':
- 58:         return TextInputType.number;
- 59:       default:
- 60:         return TextInputType.emailAddress;
- 61:     }
- 62:   }
- 63:   String? _validateIdentifier(String? v) {
- 64:     if (v == null || v.trim().isEmpty) {
- 65:       return 'Informe seu ${_identifierLabel()}';
- 66:     }
- 67:     if (_identifierType == 'cpf') {
- 68:       final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
- 69:       if (digits.length != 11) return 'CPF deve ter 11 digitos';
- 70:     }
- 71:     if (_identifierType == 'phone') {
- 72:       final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
- 73:       if (digits.length < 10) return 'Telefone invalido';
- 74:     }
- 75:     if (_identifierType == 'email') {
- 76:       if (!v.contains('@')) return 'E-mail invalido';
- 77:     }
- 78:     return null;
- 79:   }
- 80:   /// Busca o email real na coleção pública `identifiers`.
- 81:   Future<String?> _getEmailByIdentifier(String identifier) async {
- 82:     final snap = await FirebaseFirestore.instance
- 83:         .collection('identifiers')
- 84:         .doc(identifier.trim().toLowerCase())
- 85:         .get();
- 86:     if (snap.exists) {
- 87:       return snap.data()?['email'] as String?;
- 88:     }
- 89:     return null;
- 90:   }
- 91:   /// Login com e-mail direto (sem lookup em identifiers).
- 92:   Future<void> _submitEmailLogin() async {
- 93:     if (!_formKey.currentState!.validate()) return;
- 94:     setState(() => _loading = true);
- 95:     try {
- 96:       await FirebaseAuth.instance.signInWithEmailAndPassword(
- 97:         email: _emailLoginCtrl.text.trim(),
- 98:         password: _passCtrl.text.trim(),
- 99:       );
-100:     } on FirebaseAuthException catch (e) {
-101:       if (!mounted) return;
-102:       final msg = switch (e.code) {
-103:         'user-not-found' => 'E-mail nao encontrado.',
-104:         'wrong-password' => 'Senha incorreta.',
-105:         'invalid-credential' => 'E-mail ou senha incorretos.',
-106:         _ => e.message ?? 'Erro de autenticacao.',
-107:       };
-108:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-109:     } catch (e) {
-110:       if (mounted) {
-111:         ScaffoldMessenger.of(context)
-112:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
-113:       }
-114:     } finally {
-115:       if (mounted) setState(() => _loading = false);
-116:     }
-117:   }
-118:   /// Login via CPF ou Telefone (lookup em identifiers).
-119:   Future<void> _submitIdentifierLogin() async {
-120:     if (!_formKey.currentState!.validate()) return;
-121:     setState(() => _loading = true);
-122:     try {
-123:       final identifier = _identifierCtrl.text.trim();
-124:       final email = await _getEmailByIdentifier(identifier);
-125:       if (email == null) {
-126:         if (mounted) {
-127:           ScaffoldMessenger.of(context).showSnackBar(
-128:             const SnackBar(content: Text('Identificador nao encontrado.')),
-129:           );
-130:         }
-131:         return;
-132:       }
-133:       await FirebaseAuth.instance.signInWithEmailAndPassword(
-134:         email: email,
-135:         password: _passCtrl.text.trim(),
-136:       );
-137:     } on FirebaseAuthException catch (e) {
-138:       if (!mounted) return;
-139:       final msg = switch (e.code) {
-140:         'wrong-password' => 'Senha incorreta.',
-141:         'invalid-credential' => 'Identificador ou senha incorretos.',
-142:         _ => e.message ?? 'Erro de autenticacao.',
-143:       };
-144:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-145:     } catch (e) {
-146:       if (mounted) {
-147:         ScaffoldMessenger.of(context)
-148:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
-149:       }
-150:     } finally {
-151:       if (mounted) setState(() => _loading = false);
-152:     }
-153:   }
-154:   /// Cadastro novo usuário.
-155:   Future<void> _submitRegister() async {
-156:     if (!_formKey.currentState!.validate()) return;
-157:     setState(() => _loading = true);
-158:     try {
-159:       final auth = FirebaseAuth.instance;
-160:       final identifier = _identifierCtrl.text.trim();
-161:       final email = _identifierType == 'email'
-162:           ? identifier
-163:           : _emailRegisterCtrl.text.trim();
-164:       final cred = await auth.createUserWithEmailAndPassword(
-165:         email: email,
-166:         password: _passCtrl.text.trim(),
-167:       );
-168:       await UserRepository(FirebaseFirestore.instance).createUser(
-169:         UserModel(
-170:           uid: cred.user!.uid,
-171:           name: _nameCtrl.text.trim(),
-172:           email: email,
-173:           role: 'user',
-174:           identifier: identifier.toLowerCase(),
-175:           identifierType: _identifierType,
-176:         ),
-177:       );
-178:       final key = identifier.trim().toLowerCase();
-179:       await FirebaseFirestore.instance
-180:           .collection('identifiers')
-181:           .doc(key)
-182:           .set({'email': email, 'identifier_type': _identifierType});
-183:     } on FirebaseAuthException catch (e) {
-184:       if (!mounted) return;
-185:       final msg = switch (e.code) {
-186:         'email-already-in-use' => 'Este e-mail ja esta cadastrado.',
-187:         'weak-password' => 'Senha fraca — minimo 6 caracteres.',
-188:         _ => e.message ?? 'Erro de autenticacao.',
-189:       };
-190:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-191:     } catch (e) {
-192:       if (mounted) {
-193:         ScaffoldMessenger.of(context)
-194:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
-195:       }
-196:     } finally {
-197:       if (mounted) setState(() => _loading = false);
-198:     }
-199:   }
-200:   /// Login / cadastro com Google.
-201:   Future<void> _signInWithGoogle() async {
-202:     setState(() => _loading = true);
-203:     try {
-204:       final googleUser = await GoogleSignIn().signIn();
-205:       if (googleUser == null) return; // usuário cancelou
-206:       final googleAuth = await googleUser.authentication;
-207:       final credential = GoogleAuthProvider.credential(
-208:         accessToken: googleAuth.accessToken,
-209:         idToken: googleAuth.idToken,
-210:       );
-211:       final userCred =
-212:           await FirebaseAuth.instance.signInWithCredential(credential);
-213:       final user = userCred.user!;
-214:       // Se for o primeiro login com Google, cria o documento no Firestore
-215:       final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
-216:       if (isNew) {
-217:         final email = user.email ?? '';
-218:         final name = user.displayName ?? '';
-219:         await UserRepository(FirebaseFirestore.instance).createUser(
-220:           UserModel(
-221:             uid: user.uid,
-222:             name: name,
-223:             email: email,
-224:             role: 'user',
-225:             identifier: email.toLowerCase(),
-226:             identifierType: 'email',
-227:           ),
-228:         );
-229:         await FirebaseFirestore.instance
-230:             .collection('identifiers')
-231:             .doc(email.toLowerCase())
-232:             .set({'email': email, 'identifier_type': 'email'});
-233:       }
-234:     } on FirebaseAuthException catch (e) {
-235:       if (!mounted) return;
-236:       ScaffoldMessenger.of(context).showSnackBar(
-237:         SnackBar(content: Text(e.message ?? 'Erro ao entrar com Google.')),
-238:       );
-239:     } catch (e) {
-240:       if (mounted) {
-241:         ScaffoldMessenger.of(context)
-242:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
-243:       }
-244:     } finally {
-245:       if (mounted) setState(() => _loading = false);
-246:     }
-247:   }
-248:   Future<void> _forgotPassword() async {
-249:     // Mostra campos distintos dependendo do tipo de identificador
-250:     final identifierCtrl = TextEditingController(
-251:       text: _identifierType == 'email'
-252:           ? _emailLoginCtrl.text.trim()
-253:           : _identifierCtrl.text.trim(),
-254:     );
-255:     final confirmed = await showDialog<bool>(
-256:       context: context,
-257:       builder: (ctx) => AlertDialog(
-258:         title: const Text('Redefinir senha'),
-259:         content: Column(
-260:           mainAxisSize: MainAxisSize.min,
-261:           crossAxisAlignment: CrossAxisAlignment.start,
-262:           children: [
-263:             const Text(
-264:               'Digite o identificador cadastrado.\n'
-265:               'Enviaremos um link de redefinição para o e-mail associado.',
-266:               style: TextStyle(fontSize: 13),
-267:             ),
-268:             const SizedBox(height: 16),
-269:             TextField(
-270:               controller: identifierCtrl,
-271:               keyboardType: _identifierKeyboard(),
-272:               autofocus: true,
-273:               decoration: InputDecoration(
-274:                 labelText: _identifierLabel(),
-275:                 prefixIcon: Icon(_identifierIcon()),
-276:               ),
-277:             ),
-278:           ],
-279:         ),
-280:         actions: [
-281:           TextButton(
-282:             onPressed: () => Navigator.pop(ctx, false),
-283:             child: const Text('Cancelar'),
-284:           ),
-285:           FilledButton(
-286:             onPressed: () => Navigator.pop(ctx, true),
-287:             child: const Text('Enviar link'),
-288:           ),
-289:         ],
-290:       ),
-291:     );
-292:     if (confirmed != true) return;
-293:     final identifier = identifierCtrl.text.trim();
-294:     identifierCtrl.dispose();
-295:     if (identifier.isEmpty) return;
-296:     setState(() => _loading = true);
-297:     try {
-298:       String? email;
-299:       if (_identifierType == 'email') {
-300:         email = identifier;
-301:       } else {
-302:         email = await _getEmailByIdentifier(identifier);
-303:       }
-304:       if (email == null) {
-305:         if (mounted) {
-306:           ScaffoldMessenger.of(context).showSnackBar(
-307:             const SnackBar(content: Text('Identificador nao encontrado.')),
-308:           );
-309:         }
-310:         return;
-311:       }
-312:       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-313:       if (mounted) {
-314:         ScaffoldMessenger.of(context).showSnackBar(
-315:           const SnackBar(
-316:             content: Text(
-317:                 'Link de redefinicao enviado para o e-mail cadastrado.'),
-318:             duration: Duration(seconds: 4),
-319:           ),
-320:         );
-321:       }
-322:     } on FirebaseAuthException catch (e) {
-323:       if (mounted) {
-324:         ScaffoldMessenger.of(context).showSnackBar(
-325:           SnackBar(content: Text(e.message ?? 'Erro ao enviar e-mail.')),
-326:         );
-327:       }
-328:     } catch (e) {
-329:       if (mounted) {
-330:         ScaffoldMessenger.of(context)
-331:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
-332:       }
-333:     } finally {
-334:       if (mounted) setState(() => _loading = false);
-335:     }
-336:   }
-337:   void _switchMode() {
-338:     setState(() {
-339:       _isLogin = !_isLogin;
-340:       _formKey.currentState?.reset();
-341:       _nameCtrl.clear();
-342:       _emailLoginCtrl.clear();
-343:       _emailRegisterCtrl.clear();
-344:       _identifierCtrl.clear();
-345:       _passCtrl.clear();
-346:     });
-347:   }
-348:   @override
-349:   Widget build(BuildContext context) {
-350:     final theme = Theme.of(context);
-351:     return Scaffold(
-352:       body: SafeArea(
-353:         child: Center(
-354:           child: SingleChildScrollView(
-355:             padding: const EdgeInsets.all(24),
-356:             child: Form(
-357:               key: _formKey,
-358:               child: Column(
-359:                 mainAxisSize: MainAxisSize.min,
-360:                 children: [
-361:                   Image.asset(
-362:                     'assets/images/lavamax_logo.png',
-363:                     height: 100,
-364:                   ),
-365:                   const SizedBox(height: 16),
-366:                   Text(
-367:                     _isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta',
-368:                     style: theme.textTheme.titleMedium,
-369:                   ),
-370:                   const SizedBox(height: 32),
-371:                   // ── Seletor de tipo de identificador ──────────────
-372:                   SegmentedButton<String>(
-373:                     segments: const [
-374:                       ButtonSegment(
-375:                         value: 'email',
-376:                         label: Text('E-mail'),
-377:                         icon: Icon(Icons.email_outlined),
-378:                       ),
-379:                       ButtonSegment(
-380:                         value: 'cpf',
-381:                         label: Text('CPF'),
-382:                         icon: Icon(Icons.badge_outlined),
-383:                       ),
-384:                       ButtonSegment(
-385:                         value: 'phone',
-386:                         label: Text('Telefone'),
-387:                         icon: Icon(Icons.phone_outlined),
-388:                       ),
-389:                     ],
-390:                     selected: {_identifierType},
-391:                     onSelectionChanged: (s) => setState(() {
-392:                       _identifierType = s.first;
-393:                       _identifierCtrl.clear();
-394:                       _emailLoginCtrl.clear();
-395:                     }),
-396:                   ),
-397:                   const SizedBox(height: 20),
-398:                   // ── Campo principal de identificador ───────────────
-399:                   if (_identifierType == 'email' && _isLogin)
-400:                     // Login por e-mail: campo direto
-401:                     TextFormField(
-402:                       controller: _emailLoginCtrl,
-403:                       keyboardType: TextInputType.emailAddress,
-404:                       decoration: const InputDecoration(
-405:                         labelText: 'E-mail',
-406:                         prefixIcon: Icon(Icons.email_outlined),
-407:                       ),
-408:                       validator: (v) =>
-409:                           (v == null || !v.contains('@'))
-410:                               ? 'E-mail invalido'
-411:                               : null,
-412:                     )
-413:                   else
-414:                     TextFormField(
-415:                       controller: _identifierCtrl,
-416:                       keyboardType: _identifierKeyboard(),
-417:                       inputFormatters: (_identifierType == 'cpf' ||
-418:                               _identifierType == 'phone')
-419:                           ? [FilteringTextInputFormatter.digitsOnly]
-420:                           : null,
-421:                       decoration: InputDecoration(
-422:                         labelText: _identifierLabel(),
-423:                         prefixIcon: Icon(_identifierIcon()),
-424:                       ),
-425:                       validator: _validateIdentifier,
-426:                     ),
-427:                   const SizedBox(height: 16),
-428:                   // ── Campos extras apenas no cadastro ───────────────
-429:                   if (!_isLogin) ...[
-430:                     TextFormField(
-431:                       controller: _nameCtrl,
-432:                       textCapitalization: TextCapitalization.words,
-433:                       decoration: const InputDecoration(
-434:                         labelText: 'Nome completo',
-435:                         prefixIcon: Icon(Icons.person_outline),
-436:                       ),
-437:                       validator: (v) =>
-438:                           (v == null || v.trim().isEmpty)
-439:                               ? 'Informe seu nome'
-440:                               : null,
-441:                     ),
-442:                     const SizedBox(height: 16),
-443:                     // Se o identificador NÃO for e-mail, pede e-mail separado
-444:                     if (_identifierType != 'email') ...[
-445:                       TextFormField(
-446:                         controller: _emailRegisterCtrl,
-447:                         keyboardType: TextInputType.emailAddress,
-448:                         decoration: const InputDecoration(
-449:                           labelText: 'E-mail',
-450:                           prefixIcon: Icon(Icons.email_outlined),
-451:                         ),
-452:                         validator: (v) =>
-453:                             (v == null || !v.contains('@'))
-454:                                 ? 'E-mail invalido'
-455:                                 : null,
-456:                       ),
-457:                       const SizedBox(height: 16),
-458:                     ],
-459:                   ],
-460:                   // ── Senha ──────────────────────────────────────────
-461:                   TextFormField(
-462:                     controller: _passCtrl,
-463:                     obscureText: !_passVisible,
-464:                     decoration: InputDecoration(
-465:                       labelText: 'Senha',
-466:                       prefixIcon: const Icon(Icons.lock_outline),
-467:                       suffixIcon: IconButton(
-468:                         tooltip: _passVisible
-469:                             ? 'Ocultar senha'
-470:                             : 'Mostrar senha',
-471:                         icon: Icon(
-472:                           _passVisible
-473:                               ? Icons.visibility_off_outlined
-474:                               : Icons.visibility_outlined,
-475:                         ),
-476:                         onPressed: () =>
-477:                             setState(() => _passVisible = !_passVisible),
-478:                       ),
-479:                     ),
-480:                     validator: (v) =>
-481:                         (v == null || v.length < 6)
-482:                             ? 'Minimo 6 caracteres'
-483:                             : null,
-484:                   ),
-485:                   const SizedBox(height: 24),
-486:                   // ── Botão principal ────────────────────────────────
-487:                   SizedBox(
-488:                     width: double.infinity,
-489:                     child: FilledButton(
-490:                       onPressed: _loading
-491:                           ? null
-492:                           : () {
-493:                               if (_isLogin) {
-494:                                 if (_identifierType == 'email') {
-495:                                   _submitEmailLogin();
-496:                                 } else {
-497:                                   _submitIdentifierLogin();
-498:                                 }
-499:                               } else {
-500:                                 _submitRegister();
-501:                               }
-502:                             },
-503:                       child: _loading
-504:                           ? const SizedBox(
-505:                               height: 20,
-506:                               width: 20,
-507:                               child: CircularProgressIndicator(
-508:                                   strokeWidth: 2),
-509:                             )
-510:                           : Text(_isLogin ? 'Entrar' : 'Cadastrar'),
-511:                     ),
-512:                   ),
-513:                   // ── Esqueci minha senha ────────────────────────────
-514:                   if (_isLogin) ...[
-515:                     const SizedBox(height: 8),
-516:                     SizedBox(
-517:                       width: double.infinity,
-518:                       child: TextButton(
-519:                         onPressed: _loading ? null : _forgotPassword,
-520:                         child: const Text('Esqueci minha senha'),
-521:                       ),
-522:                     ),
-523:                   ],
-524:                   // ── Divisor ────────────────────────────────────────
-525:                   const SizedBox(height: 8),
-526:                   Row(
-527:                     children: [
-528:                       const Expanded(child: Divider()),
-529:                       Padding(
-530:                         padding: const EdgeInsets.symmetric(horizontal: 12),
-531:                         child: Text(
-532:                           'ou',
-533:                           style: theme.textTheme.bodySmall?.copyWith(
-534:                               color: Colors.grey),
-535:                         ),
-536:                       ),
-537:                       const Expanded(child: Divider()),
-538:                     ],
-539:                   ),
-540:                   const SizedBox(height: 8),
-541:                   // ── Botão Google ───────────────────────────────────
-542:                   SizedBox(
-543:                     width: double.infinity,
-544:                     child: OutlinedButton.icon(
-545:                       onPressed: _loading ? null : _signInWithGoogle,
-546:                       icon: Image.asset(
-547:                         'assets/icons/google_logo.png',
-548:                         height: 20,
-549:                         errorBuilder: (_, _, _) =>
-550:                             const Icon(Icons.g_mobiledata, size: 22),
-551:                       ),
-552:                       label: const Text('Continuar com Google'),
-553:                     ),
-554:                   ),
-555:                   const SizedBox(height: 4),
-556:                   // ── Alternar login / cadastro ──────────────────────
-557:                   TextButton(
-558:                     onPressed: _switchMode,
-559:                     child: Text(
-560:                       _isLogin
-561:                           ? 'Nao tem conta? Cadastre-se'
-562:                           : 'Ja tem conta? Entre',
-563:                     ),
-564:                   ),
-565:                 ],
-566:               ),
-567:             ),
-568:           ),
-569:         ),
-570:       ),
-571:     );
-572:   }
-573: }
-</file>
-
 <file path="lib/presentation/screens/booking_receipt_screen.dart">
   1: import 'package:flutter/material.dart';
   2: import 'package:intl/intl.dart';
@@ -8086,650 +7539,6 @@ This section contains the contents of the repository's files.
 370: }
 </file>
 
-<file path="lib/presentation/screens/profile_screen.dart">
-  1: import 'package:cloud_firestore/cloud_firestore.dart';
-  2: import 'package:firebase_auth/firebase_auth.dart';
-  3: import 'package:flutter/material.dart';
-  4: import 'package:flutter/services.dart';
-  5: import 'package:flutter_riverpod/flutter_riverpod.dart';
-  6: import '../providers/user_provider.dart';
-  7: class ProfileScreen extends ConsumerStatefulWidget {
-  8:   const ProfileScreen({super.key});
-  9:   @override
- 10:   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
- 11: }
- 12: class _ProfileScreenState extends ConsumerState<ProfileScreen> {
- 13:   final _formKey = GlobalKey<FormState>();
- 14:   final _nameCtrl = TextEditingController();
- 15:   final _emailCtrl = TextEditingController();
- 16:   final _phoneCtrl = TextEditingController();
- 17:   final _whatsappCtrl = TextEditingController();
- 18:   final _addressCtrl = TextEditingController();
- 19:   final _currentPassCtrl = TextEditingController();
- 20:   final _newPassCtrl = TextEditingController();
- 21:   final _confirmPassCtrl = TextEditingController();
- 22:   bool _loading = false;
- 23:   bool _showChangePassword = false;
- 24:   bool _obscureCurrent = true;
- 25:   bool _obscureNew = true;
- 26:   bool _obscureConfirm = true;
- 27:   bool _whatsappSameAsPhone = false;
- 28:   bool _initialized = false;
- 29:   @override
- 30:   void dispose() {
- 31:     _nameCtrl.dispose();
- 32:     _emailCtrl.dispose();
- 33:     _phoneCtrl.dispose();
- 34:     _whatsappCtrl.dispose();
- 35:     _addressCtrl.dispose();
- 36:     _currentPassCtrl.dispose();
- 37:     _newPassCtrl.dispose();
- 38:     _confirmPassCtrl.dispose();
- 39:     super.dispose();
- 40:   }
- 41:   void _initFields(String name, String email, String phone, String whatsapp, String address) {
- 42:     if (!_initialized) {
- 43:       _nameCtrl.text = name;
- 44:       _emailCtrl.text = email;
- 45:       _phoneCtrl.text = phone;
- 46:       _whatsappCtrl.text = whatsapp;
- 47:       _addressCtrl.text = address;
- 48:       // Se telefone e whatsapp são iguais e não vazios, marca o checkbox
- 49:       if (phone.isNotEmpty && phone == whatsapp) {
- 50:         _whatsappSameAsPhone = true;
- 51:       }
- 52:       _initialized = true;
- 53:     }
- 54:   }
- 55:   /// Remove tudo que não for dígito
- 56:   String _onlyDigits(String v) => v.replaceAll(RegExp(r'\D'), '');
- 57:   void _onPhoneChanged(String value) {
- 58:     if (_whatsappSameAsPhone) {
- 59:       _whatsappCtrl.text = value;
- 60:     }
- 61:   }
- 62:   void _onWhatsappSameToggled(bool? checked) {
- 63:     setState(() {
- 64:       _whatsappSameAsPhone = checked ?? false;
- 65:       if (_whatsappSameAsPhone) {
- 66:         _whatsappCtrl.text = _phoneCtrl.text;
- 67:       }
- 68:     });
- 69:   }
- 70:   Future<void> _save() async {
- 71:     if (!_formKey.currentState!.validate()) return;
- 72:     final user = FirebaseAuth.instance.currentUser;
- 73:     if (user == null) return;
- 74:     setState(() => _loading = true);
- 75:     try {
- 76:       final newName = _nameCtrl.text.trim();
- 77:       final newEmail = _emailCtrl.text.trim();
- 78:       final newPhone = _onlyDigits(_phoneCtrl.text);
- 79:       final newWhatsapp = _whatsappSameAsPhone
- 80:           ? newPhone
- 81:           : _onlyDigits(_whatsappCtrl.text);
- 82:       final newAddress = _addressCtrl.text.trim();
- 83:       // Atualiza email no Auth se mudou
- 84:       if (newEmail != user.email) {
- 85:         await user.verifyBeforeUpdateEmail(newEmail);
- 86:         if (mounted) {
- 87:           ScaffoldMessenger.of(context).showSnackBar(
- 88:             const SnackBar(
- 89:               content: Text(
- 90:                 'Um link de verificacao foi enviado para o novo e-mail. '
- 91:                 'O e-mail so sera atualizado apos confirmacao.',
- 92:               ),
- 93:               duration: Duration(seconds: 5),
- 94:             ),
- 95:           );
- 96:         }
- 97:       }
- 98:       // Atualiza dados no Firestore
- 99:       await FirebaseFirestore.instance
-100:           .collection('users')
-101:           .doc(user.uid)
-102:           .update({
-103:         'name': newName,
-104:         'phone': newPhone,
-105:         'whatsapp': newWhatsapp,
-106:         'address': newAddress,
-107:       });
-108:       // Atualiza senha se solicitado
-109:       if (_showChangePassword && _newPassCtrl.text.isNotEmpty) {
-110:         final credential = EmailAuthProvider.credential(
-111:           email: user.email!,
-112:           password: _currentPassCtrl.text,
-113:         );
-114:         await user.reauthenticateWithCredential(credential);
-115:         await user.updatePassword(_newPassCtrl.text);
-116:         _currentPassCtrl.clear();
-117:         _newPassCtrl.clear();
-118:         _confirmPassCtrl.clear();
-119:         setState(() => _showChangePassword = false);
-120:       }
-121:       if (mounted) {
-122:         ScaffoldMessenger.of(context).showSnackBar(
-123:           const SnackBar(content: Text('Perfil atualizado com sucesso.')),
-124:         );
-125:       }
-126:     } on FirebaseAuthException catch (e) {
-127:       if (!mounted) return;
-128:       final msg = switch (e.code) {
-129:         'wrong-password' => 'Senha atual incorreta.',
-130:         'requires-recent-login' =>
-131:           'Sessao expirada. Saia e entre novamente para alterar dados sensiveis.',
-132:         'email-already-in-use' => 'Este e-mail ja esta em uso.',
-133:         _ => e.message ?? 'Erro ao atualizar perfil.',
-134:       };
-135:       ScaffoldMessenger.of(context)
-136:           .showSnackBar(SnackBar(content: Text(msg)));
-137:     } catch (e) {
-138:       if (mounted) {
-139:         ScaffoldMessenger.of(context)
-140:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
-141:       }
-142:     } finally {
-143:       if (mounted) setState(() => _loading = false);
-144:     }
-145:   }
-146:   @override
-147:   Widget build(BuildContext context) {
-148:     final userAsync = ref.watch(userRoleProvider);
-149:     return Scaffold(
-150:       appBar: AppBar(title: const Text('Meu Perfil')),
-151:       body: userAsync.when(
-152:         loading: () => const Center(child: CircularProgressIndicator()),
-153:         error: (e, _) => Center(child: Text('Erro: $e')),
-154:         data: (user) {
-155:           if (user == null) {
-156:             return const Center(child: CircularProgressIndicator());
-157:           }
-158:           _initFields(user.name, user.email, user.phone, user.whatsapp, user.address);
-159:           return SingleChildScrollView(
-160:             padding: const EdgeInsets.all(24),
-161:             child: Form(
-162:               key: _formKey,
-163:               child: Column(
-164:                 crossAxisAlignment: CrossAxisAlignment.stretch,
-165:                 children: [
-166:                   const SizedBox(height: 8),
-167:                   // Info somente leitura
-168:                   _InfoRow(
-169:                     label: 'Identificador',
-170:                     value: '${user.identifier} (${user.identifierType})',
-171:                   ),
-172:                   const SizedBox(height: 24),
-173:                   // Nome
-174:                   TextFormField(
-175:                     controller: _nameCtrl,
-176:                     textCapitalization: TextCapitalization.words,
-177:                     decoration: const InputDecoration(
-178:                       labelText: 'Nome completo',
-179:                       border: OutlineInputBorder(),
-180:                       prefixIcon: Icon(Icons.person_outline),
-181:                     ),
-182:                     validator: (v) => (v == null || v.trim().isEmpty)
-183:                         ? 'Informe seu nome'
-184:                         : null,
-185:                   ),
-186:                   const SizedBox(height: 16),
-187:                   // E-mail
-188:                   TextFormField(
-189:                     controller: _emailCtrl,
-190:                     keyboardType: TextInputType.emailAddress,
-191:                     decoration: const InputDecoration(
-192:                       labelText: 'E-mail',
-193:                       border: OutlineInputBorder(),
-194:                       prefixIcon: Icon(Icons.email_outlined),
-195:                       helperText:
-196:                           'Alterar envia um link de verificacao para o novo e-mail.',
-197:                     ),
-198:                     validator: (v) =>
-199:                         (v == null || !v.contains('@')) ? 'E-mail invalido' : null,
-200:                   ),
-201:                   const SizedBox(height: 16),
-202:                   // Telefone
-203:                   TextFormField(
-204:                     controller: _phoneCtrl,
-205:                     keyboardType: TextInputType.phone,
-206:                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-207:                     maxLength: 11,
-208:                     onChanged: _onPhoneChanged,
-209:                     decoration: const InputDecoration(
-210:                       labelText: 'Telefone',
-211:                       border: OutlineInputBorder(),
-212:                       prefixIcon: Icon(Icons.phone_outlined),
-213:                       hintText: '11999998888',
-214:                       counterText: '',
-215:                     ),
-216:                     validator: (v) {
-217:                       if (v == null || v.isEmpty) return null; // opcional
-218:                       final digits = _onlyDigits(v);
-219:                       if (digits.length < 10 || digits.length > 11) {
-220:                         return 'Informe um telefone valido (10 ou 11 digitos)';
-221:                       }
-222:                       return null;
-223:                     },
-224:                   ),
-225:                   const SizedBox(height: 4),
-226:                   // Checkbox WhatsApp igual ao telefone
-227:                   Row(
-228:                     children: [
-229:                       Checkbox(
-230:                         value: _whatsappSameAsPhone,
-231:                         onChanged: _onWhatsappSameToggled,
-232:                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-233:                         visualDensity: VisualDensity.compact,
-234:                       ),
-235:                       const Text('WhatsApp igual ao telefone'),
-236:                     ],
-237:                   ),
-238:                   const SizedBox(height: 8),
-239:                   // WhatsApp
-240:                   TextFormField(
-241:                     controller: _whatsappCtrl,
-242:                     keyboardType: TextInputType.phone,
-243:                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-244:                     maxLength: 11,
-245:                     enabled: !_whatsappSameAsPhone,
-246:                     decoration: InputDecoration(
-247:                       labelText: 'WhatsApp',
-248:                       border: const OutlineInputBorder(),
-249:                       prefixIcon: const Icon(Icons.chat_outlined),
-250:                       hintText: '11999998888',
-251:                       counterText: '',
-252:                       filled: _whatsappSameAsPhone,
-253:                       fillColor: _whatsappSameAsPhone
-254:                           ? Theme.of(context).disabledColor.withValues(alpha: 0.08)
-255:                           : null,
-256:                     ),
-257:                     validator: (v) {
-258:                       if (v == null || v.isEmpty) return null; // opcional
-259:                       final digits = _onlyDigits(v);
-260:                       if (digits.length < 10 || digits.length > 11) {
-261:                         return 'Informe um WhatsApp valido (10 ou 11 digitos)';
-262:                       }
-263:                       return null;
-264:                     },
-265:                   ),
-266:                   const SizedBox(height: 16),
-267:                   // Endereço
-268:                   TextFormField(
-269:                     controller: _addressCtrl,
-270:                     textCapitalization: TextCapitalization.sentences,
-271:                     decoration: const InputDecoration(
-272:                       labelText: 'Endereco',
-273:                       border: OutlineInputBorder(),
-274:                       prefixIcon: Icon(Icons.location_on_outlined),
-275:                       hintText: 'Rua, numero, bairro, cidade',
-276:                     ),
-277:                     maxLines: 2,
-278:                   ),
-279:                   const SizedBox(height: 24),
-280:                   // Seção de alteração de senha
-281:                   OutlinedButton.icon(
-282:                     onPressed: () => setState(
-283:                         () => _showChangePassword = !_showChangePassword),
-284:                     icon: Icon(_showChangePassword
-285:                         ? Icons.expand_less
-286:                         : Icons.lock_outline),
-287:                     label: Text(_showChangePassword
-288:                         ? 'Cancelar alteracao de senha'
-289:                         : 'Alterar senha'),
-290:                   ),
-291:                   if (_showChangePassword) ...[
-292:                     const SizedBox(height: 16),
-293:                     TextFormField(
-294:                       controller: _currentPassCtrl,
-295:                       obscureText: _obscureCurrent,
-296:                       decoration: InputDecoration(
-297:                         labelText: 'Senha atual',
-298:                         border: const OutlineInputBorder(),
-299:                         prefixIcon: const Icon(Icons.lock_outline),
-300:                         suffixIcon: IconButton(
-301:                           icon: Icon(_obscureCurrent
-302:                               ? Icons.visibility_outlined
-303:                               : Icons.visibility_off_outlined),
-304:                           onPressed: () => setState(
-305:                               () => _obscureCurrent = !_obscureCurrent),
-306:                         ),
-307:                       ),
-308:                       validator: (v) {
-309:                         if (!_showChangePassword) return null;
-310:                         if (v == null || v.isEmpty) return 'Informe a senha atual';
-311:                         return null;
-312:                       },
-313:                     ),
-314:                     const SizedBox(height: 12),
-315:                     TextFormField(
-316:                       controller: _newPassCtrl,
-317:                       obscureText: _obscureNew,
-318:                       decoration: InputDecoration(
-319:                         labelText: 'Nova senha',
-320:                         border: const OutlineInputBorder(),
-321:                         prefixIcon: const Icon(Icons.lock_outline),
-322:                         suffixIcon: IconButton(
-323:                           icon: Icon(_obscureNew
-324:                               ? Icons.visibility_outlined
-325:                               : Icons.visibility_off_outlined),
-326:                           onPressed: () =>
-327:                               setState(() => _obscureNew = !_obscureNew),
-328:                         ),
-329:                       ),
-330:                       validator: (v) {
-331:                         if (!_showChangePassword) return null;
-332:                         if (v == null || v.length < 6) {
-333:                           return 'Minimo 6 caracteres';
-334:                         }
-335:                         return null;
-336:                       },
-337:                     ),
-338:                     const SizedBox(height: 12),
-339:                     TextFormField(
-340:                       controller: _confirmPassCtrl,
-341:                       obscureText: _obscureConfirm,
-342:                       decoration: InputDecoration(
-343:                         labelText: 'Confirmar nova senha',
-344:                         border: const OutlineInputBorder(),
-345:                         prefixIcon: const Icon(Icons.lock_outline),
-346:                         suffixIcon: IconButton(
-347:                           icon: Icon(_obscureConfirm
-348:                               ? Icons.visibility_outlined
-349:                               : Icons.visibility_off_outlined),
-350:                           onPressed: () => setState(
-351:                               () => _obscureConfirm = !_obscureConfirm),
-352:                         ),
-353:                       ),
-354:                       validator: (v) {
-355:                         if (!_showChangePassword) return null;
-356:                         if (v != _newPassCtrl.text) {
-357:                           return 'As senhas nao coincidem';
-358:                         }
-359:                         return null;
-360:                       },
-361:                     ),
-362:                   ],
-363:                   const SizedBox(height: 32),
-364:                   SizedBox(
-365:                     height: 48,
-366:                     child: FilledButton(
-367:                       onPressed: _loading ? null : _save,
-368:                       child: _loading
-369:                           ? const SizedBox(
-370:                               height: 20,
-371:                               width: 20,
-372:                               child: CircularProgressIndicator(strokeWidth: 2),
-373:                             )
-374:                           : const Text('Salvar alteracoes'),
-375:                     ),
-376:                   ),
-377:                 ],
-378:               ),
-379:             ),
-380:           );
-381:         },
-382:       ),
-383:     );
-384:   }
-385: }
-386: class _InfoRow extends StatelessWidget {
-387:   final String label;
-388:   final String value;
-389:   const _InfoRow({required this.label, required this.value});
-390:   @override
-391:   Widget build(BuildContext context) {
-392:     return Row(
-393:       children: [
-394:         Text(
-395:           '$label: ',
-396:           style: const TextStyle(
-397:               fontWeight: FontWeight.bold, color: Colors.grey),
-398:         ),
-399:         Text(value),
-400:       ],
-401:     );
-402:   }
-403: }
-</file>
-
-<file path="lib/presentation/screens/service_detail_screen.dart">
-  1: import 'package:flutter/material.dart';
-  2: import 'package:flutter_riverpod/flutter_riverpod.dart';
-  3: import 'package:lavamax/core/constants/app_colors.dart';
-  4: import 'package:lavamax/core/constants/app_dimensions.dart';
-  5: import 'package:lavamax/core/utils/formatters.dart';
-  6: import 'package:lavamax/data/models/service_model.dart';
-  7: import 'package:lavamax/presentation/providers/service_provider.dart';
-  8: import 'package:lavamax/presentation/providers/branch_provider.dart';
-  9: import 'package:lavamax/presentation/providers/consultant_provider.dart';
- 10: import 'package:lavamax/presentation/providers/slot_provider.dart';
- 11: import 'package:lavamax/presentation/screens/vehicle_selection_screen.dart';
- 12: import 'package:lavamax/presentation/widgets/sprite_icon.dart';
- 13: 
- 14: class ServiceDetailScreen extends ConsumerWidget {
- 15:   final ServiceModel service;
- 16: 
- 17:   const ServiceDetailScreen({super.key, required this.service});
- 18: 
- 19:   @override
- 20:   Widget build(BuildContext context, WidgetRef ref) {
- 21:     // Fotos: usa imageUrls se disponível no futuro; por ora usa iconUrl como preview único
- 22:     final hasPhoto = service.iconUrl.isNotEmpty;
- 23: 
- 24:     return Scaffold(
- 25:       backgroundColor: AppColors.grey50,
- 26:       body: CustomScrollView(
- 27:         slivers: [
- 28:           // ── AppBar com imagem/ícone ──────────────────────────
- 29:           SliverAppBar(
- 30:             expandedHeight: 240,
- 31:             pinned: true,
- 32:             backgroundColor: AppColors.primary,
- 33:             foregroundColor: AppColors.white,
- 34:             flexibleSpace: FlexibleSpaceBar(
- 35:               background: _ServiceHero(service: service, hasPhoto: hasPhoto),
- 36:             ),
- 37:           ),
- 38: 
- 39:           // ── Conteúdo ─────────────────────────────────────────
- 40:           SliverToBoxAdapter(
- 41:             child: Padding(
- 42:               padding: const EdgeInsets.all(AppDimensions.paddingLarge),
- 43:               child: Column(
- 44:                 crossAxisAlignment: CrossAxisAlignment.start,
- 45:                 children: [
- 46:                   // Nome
- 47:                   Text(
- 48:                     service.name,
- 49:                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
- 50:                           fontWeight: FontWeight.bold,
- 51:                           color: AppColors.primary,
- 52:                         ),
- 53:                   ),
- 54:                   const SizedBox(height: AppDimensions.paddingMedium),
- 55: 
- 56:                   // Preço e duração
- 57:                   Row(
- 58:                     children: [
- 59:                       _InfoChip(
- 60:                         icon: Icons.attach_money,
- 61:                         label: formatBrl(service.price),
- 62:                         color: AppColors.success,
- 63:                       ),
- 64:                       const SizedBox(width: AppDimensions.paddingSmall),
- 65:                       _InfoChip(
- 66:                         icon: Icons.timer_outlined,
- 67:                         label: _formatDuration(service.durationMinutes),
- 68:                         color: AppColors.accentDark,
- 69:                       ),
- 70:                     ],
- 71:                   ),
- 72: 
- 73:                   const SizedBox(height: AppDimensions.paddingLarge),
- 74: 
- 75:                   // Descrição
- 76:                   Text(
- 77:                     'Sobre o serviço',
- 78:                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
- 79:                           fontWeight: FontWeight.bold,
- 80:                           color: AppColors.primary,
- 81:                         ),
- 82:                   ),
- 83:                   const SizedBox(height: AppDimensions.paddingSmall),
- 84:                   Text(
- 85:                     service.description,
- 86:                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
- 87:                           color: AppColors.grey700,
- 88:                           height: 1.6,
- 89:                         ),
- 90:                   ),
- 91: 
- 92:                   const SizedBox(height: AppDimensions.paddingXLarge),
- 93:                 ],
- 94:               ),
- 95:             ),
- 96:           ),
- 97:         ],
- 98:       ),
- 99: 
-100:       // ── Botão fixo no rodapé ──────────────────────────────────
-101:       bottomNavigationBar: SafeArea(
-102:         child: Padding(
-103:           padding: const EdgeInsets.fromLTRB(
-104:             AppDimensions.paddingLarge,
-105:             AppDimensions.paddingSmall,
-106:             AppDimensions.paddingLarge,
-107:             AppDimensions.paddingMedium,
-108:           ),
-109:           child: FilledButton.icon(
-110:             onPressed: () => _agendar(context, ref),
-111:             icon: const Icon(Icons.calendar_month_outlined),
-112:             label: const Text('Agendar este serviço'),
-113:             style: FilledButton.styleFrom(
-114:               minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
-115:               backgroundColor: AppColors.accentDark,
-116:               foregroundColor: AppColors.white,
-117:               textStyle: const TextStyle(
-118:                 fontSize: 16,
-119:                 fontWeight: FontWeight.bold,
-120:               ),
-121:             ),
-122:           ),
-123:         ),
-124:       ),
-125:     );
-126:   }
-127: 
-128:   void _agendar(BuildContext context, WidgetRef ref) {
-129:     // Pré-seleciona o serviço e reseta o restante do fluxo
-130:     ref.read(selectedServiceProvider.notifier).state = service;
-131:     ref.read(selectedBranchProvider.notifier).state = null;
-132:     ref.read(selectedDateProvider.notifier).state = null;
-133:     ref.read(selectedSlotProvider.notifier).state = null;
-134:     ref.read(selectedConsultantProvider.notifier).state = null;
-135:     ref.read(consultantHasConflictProvider.notifier).state = false;
-136: 
-137:     Navigator.of(context).push(
-138:       MaterialPageRoute(
-139:         builder: (_) => const VehicleSelectionScreen(isFromBooking: true),
-140:       ),
-141:     );
-142:   }
-143: 
-144:   String _formatDuration(int minutes) {
-145:     if (minutes < 60) return '${minutes}min';
-146:     final h = minutes ~/ 60;
-147:     final m = minutes % 60;
-148:     return m == 0 ? '${h}h' : '${h}h ${m}min';
-149:   }
-150: }
-151: 
-152: // ── Hero: imagem grande ou ícone sprite centralizado ──────────
-153: class _ServiceHero extends StatelessWidget {
-154:   final ServiceModel service;
-155:   final bool hasPhoto;
-156: 
-157:   const _ServiceHero({required this.service, required this.hasPhoto});
-158: 
-159:   @override
-160:   Widget build(BuildContext context) {
-161:     return Container(
-162:       decoration: BoxDecoration(
-163:         color: AppColors.primary,
-164:         gradient: LinearGradient(
-165:           begin: Alignment.topCenter,
-166:           end: Alignment.bottomCenter,
-167:           colors: [
-168:             AppColors.primaryLight,
-169:             AppColors.primary,
-170:           ],
-171:         ),
-172:       ),
-173:       child: Center(
-174:         child: Column(
-175:           mainAxisAlignment: MainAxisAlignment.center,
-176:           children: [
-177:             const SizedBox(height: 48), // espaço abaixo da status bar
-178:             Container(
-179:               width: 120,
-180:               height: 120,
-181:               decoration: BoxDecoration(
-182:                 color: AppColors.accent.withValues(alpha: 0.12),
-183:                 borderRadius: BorderRadius.circular(24),
-184:               ),
-185:               child: Padding(
-186:                 padding: const EdgeInsets.all(12),
-187:                 child: SpriteIcon(iconKey: service.iconUrl, size: 96),
-188:               ),
-189:             ),
-190:           ],
-191:         ),
-192:       ),
-193:     );
-194:   }
-195: }
-196: 
-197: // ── Chip de info (preço / duração) ────────────────────────────
-198: class _InfoChip extends StatelessWidget {
-199:   final IconData icon;
-200:   final String label;
-201:   final Color color;
-202: 
-203:   const _InfoChip({
-204:     required this.icon,
-205:     required this.label,
-206:     required this.color,
-207:   });
-208: 
-209:   @override
-210:   Widget build(BuildContext context) {
-211:     return Container(
-212:       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-213:       decoration: BoxDecoration(
-214:         color: color.withValues(alpha: 0.1),
-215:         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-216:         border: Border.all(color: color.withValues(alpha: 0.3)),
-217:       ),
-218:       child: Row(
-219:         mainAxisSize: MainAxisSize.min,
-220:         children: [
-221:           Icon(icon, size: 16, color: color),
-222:           const SizedBox(width: 6),
-223:           Text(
-224:             label,
-225:             style: TextStyle(
-226:               fontSize: 14,
-227:               fontWeight: FontWeight.bold,
-228:               color: color,
-229:             ),
-230:           ),
-231:         ],
-232:       ),
-233:     );
-234:   }
-235: }
-</file>
-
 <file path="lib/presentation/screens/service_selection_screen.dart">
  1: import 'package:flutter/material.dart';
  2: import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8794,136 +7603,6 @@ This section contains the contents of the repository's files.
 61:     );
 62:   }
 63: }
-</file>
-
-<file path="lib/presentation/screens/services_catalog_screen.dart">
-  1: import 'package:flutter/material.dart';
-  2: import 'package:flutter_riverpod/flutter_riverpod.dart';
-  3: import 'package:lavamax/core/constants/app_colors.dart';
-  4: import 'package:lavamax/core/constants/app_dimensions.dart';
-  5: import 'package:lavamax/data/models/service_model.dart';
-  6: import 'package:lavamax/presentation/providers/service_provider.dart';
-  7: import 'package:lavamax/presentation/screens/service_detail_screen.dart';
-  8: import 'package:lavamax/presentation/widgets/sprite_icon.dart';
-  9: 
- 10: class ServicesCatalogScreen extends ConsumerWidget {
- 11:   const ServicesCatalogScreen({super.key});
- 12: 
- 13:   @override
- 14:   Widget build(BuildContext context, WidgetRef ref) {
- 15:     final servicesAsync = ref.watch(servicesProvider);
- 16: 
- 17:     return Scaffold(
- 18:       appBar: AppBar(
- 19:         backgroundColor: AppColors.primary,
- 20:         foregroundColor: AppColors.white,
- 21:         elevation: 0,
- 22:         leading: IconButton(
- 23:           icon: const Icon(Icons.arrow_back),
- 24:           onPressed: () => Navigator.of(context).pop(),
- 25:         ),
- 26:         title: Image.asset(
- 27:           'assets/images/lavamax_logo.png',
- 28:           height: 36,
- 29:           fit: BoxFit.contain,
- 30:         ),
- 31:         centerTitle: true,
- 32:       ),
- 33:       body: servicesAsync.when(
- 34:         loading: () => const Center(child: CircularProgressIndicator()),
- 35:         error: (e, _) => Center(
- 36:           child: Column(
- 37:             mainAxisAlignment: MainAxisAlignment.center,
- 38:             children: [
- 39:               const Icon(Icons.error_outline, size: 48, color: AppColors.error),
- 40:               const SizedBox(height: 12),
- 41:               Text('Erro ao carregar serviços: $e',
- 42:                   textAlign: TextAlign.center),
- 43:               const SizedBox(height: 16),
- 44:               FilledButton(
- 45:                 onPressed: () => ref.invalidate(servicesProvider),
- 46:                 child: const Text('Tentar novamente'),
- 47:               ),
- 48:             ],
- 49:           ),
- 50:         ),
- 51:         data: (services) {
- 52:           if (services.isEmpty) {
- 53:             return const Center(child: Text('Nenhum serviço disponível.'));
- 54:           }
- 55:           final sorted = [...services]
- 56:             ..sort((a, b) {
- 57:               final byOrder = a.sortOrder.compareTo(b.sortOrder);
- 58:               if (byOrder != 0) return byOrder;
- 59:               return a.name.toLowerCase().compareTo(b.name.toLowerCase());
- 60:             });
- 61:           return GridView.builder(
- 62:             padding:
- 63:                 const EdgeInsets.all(AppDimensions.screenPaddingHorizontal),
- 64:             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
- 65:               crossAxisCount: 2,
- 66:               crossAxisSpacing: AppDimensions.paddingMedium,
- 67:               mainAxisSpacing: AppDimensions.paddingMedium,
- 68:               childAspectRatio: 1.4,
- 69:             ),
- 70:             itemCount: sorted.length,
- 71:             itemBuilder: (context, index) {
- 72:               return _ServiceCard(service: sorted[index]);
- 73:             },
- 74:           );
- 75:         },
- 76:       ),
- 77:     );
- 78:   }
- 79: }
- 80: 
- 81: class _ServiceCard extends StatelessWidget {
- 82:   final ServiceModel service;
- 83: 
- 84:   const _ServiceCard({required this.service});
- 85: 
- 86:   @override
- 87:   Widget build(BuildContext context) {
- 88:     return Card(
- 89:       shape: RoundedRectangleBorder(
- 90:         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
- 91:         side: BorderSide(
- 92:           color: AppColors.accent.withValues(alpha: 0.25),
- 93:           width: 1,
- 94:         ),
- 95:       ),
- 96:       child: InkWell(
- 97:         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
- 98:         onTap: () => Navigator.of(context).push(
- 99:           MaterialPageRoute(
-100:             builder: (_) => ServiceDetailScreen(service: service),
-101:           ),
-102:         ),
-103:         child: Padding(
-104:           padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
-105:           child: Column(
-106:             mainAxisAlignment: MainAxisAlignment.center,
-107:             children: [
-108:               SpriteIcon(iconKey: service.iconUrl, size: 40),
-109:               const SizedBox(height: 6),
-110:               Text(
-111:                 service.name,
-112:                 maxLines: 2,
-113:                 overflow: TextOverflow.ellipsis,
-114:                 textAlign: TextAlign.center,
-115:                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-116:                       fontWeight: FontWeight.bold,
-117:                       color: AppColors.primary,
-118:                       height: 1.3,
-119:                     ),
-120:               ),
-121:             ],
-122:           ),
-123:         ),
-124:       ),
-125:     );
-126:   }
-127: }
 </file>
 
 <file path="lib/presentation/screens/slot_selection_screen.dart">
@@ -9686,6 +8365,1223 @@ This section contains the contents of the repository's files.
 106: }
 </file>
 
+<file path="storage.rules">
+ 1: rules_version = '2';
+ 2: // Craft rules based on data in your Firestore database
+ 3: // allow write: if firestore.get(
+ 4: //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+ 5: service firebase.storage {
+ 6:   match /b/{bucket}/o {
+ 7:     // This rule allows anyone with your Storage bucket reference to view, edit,
+ 8:     // and delete all data in your Storage bucket. It is useful for getting
+ 9:     // started, but it is configured to expire after 30 days because it
+10:     // leaves your app open to attackers. At that time, all client
+11:     // requests to your Storage bucket will be denied.
+12:     //
+13:     // Make sure to write security rules for your app before that time, or else
+14:     // all client requests to your Storage bucket will be denied until you Update
+15:     // your rules
+16:     match /{allPaths=**} {
+17:       allow read, write: if request.time < timestamp.date(2026, 3, 29);
+18:     }
+19:   }
+20: }
+</file>
+
+<file path="web/index.html">
+ 1: <!DOCTYPE html>
+ 2: <html>
+ 3: <head>
+ 4:   <!--
+ 5:     If you are serving your web app in a path other than the root, change the
+ 6:     href value below to reflect the base path you are serving from.
+ 7: 
+ 8:     The path provided below has to start and end with a slash "/" in order for
+ 9:     it to work correctly.
+10: 
+11:     For more details:
+12:     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+13: 
+14:     This is a placeholder for base href that will be replaced by the value of
+15:     the `--base-href` argument provided to `flutter build`.
+16:   -->
+17:   <base href="$FLUTTER_BASE_HREF">
+18: 
+19:   <meta charset="UTF-8">
+20:   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+21:   <meta name="description" content="A new Flutter project.">
+22: 
+23:   <!-- iOS meta tags & icons -->
+24:   <meta name="mobile-web-app-capable" content="yes">
+25:   <meta name="apple-mobile-web-app-status-bar-style" content="black">
+26:   <meta name="apple-mobile-web-app-title" content="lavamax">
+27:   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+28: 
+29:   <!-- Favicon -->
+30:   <link rel="icon" type="image/png" href="favicon.png"/>
+31: 
+32:   <title>lavamax</title>
+33:   <link rel="manifest" href="manifest.json">
+34: </head>
+35: <body>
+36:   <!--
+37:     You can customize the "flutter_bootstrap.js" script.
+38:     This is useful to provide a custom configuration to the Flutter loader
+39:     or to give the user feedback during the initialization process.
+40: 
+41:     For more details:
+42:     * https://docs.flutter.dev/platform-integration/web/initialization
+43:   -->
+44:   <script src="flutter_bootstrap.js" async></script>
+45: </body>
+46: </html>
+</file>
+
+<file path="web/manifest.json">
+ 1: {
+ 2:     "name": "lavamax",
+ 3:     "short_name": "lavamax",
+ 4:     "start_url": ".",
+ 5:     "display": "standalone",
+ 6:     "background_color": "#0175C2",
+ 7:     "theme_color": "#0175C2",
+ 8:     "description": "A new Flutter project.",
+ 9:     "orientation": "portrait-primary",
+10:     "prefer_related_applications": false,
+11:     "icons": [
+12:         {
+13:             "src": "icons/Icon-192.png",
+14:             "sizes": "192x192",
+15:             "type": "image/png"
+16:         },
+17:         {
+18:             "src": "icons/Icon-512.png",
+19:             "sizes": "512x512",
+20:             "type": "image/png"
+21:         },
+22:         {
+23:             "src": "icons/Icon-maskable-192.png",
+24:             "sizes": "192x192",
+25:             "type": "image/png",
+26:             "purpose": "maskable"
+27:         },
+28:         {
+29:             "src": "icons/Icon-maskable-512.png",
+30:             "sizes": "512x512",
+31:             "type": "image/png",
+32:             "purpose": "maskable"
+33:         }
+34:     ]
+35: }
+</file>
+
+<file path="ios/Podfile">
+ 1: platform :ios, '15.0'
+ 2: 
+ 3: ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+ 4: 
+ 5: project 'Runner', {
+ 6:   'Debug' => :debug,
+ 7:   'Profile' => :release,
+ 8:   'Release' => :release,
+ 9: }
+10: 
+11: def flutter_root
+12:   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+13:   unless File.exist?(generated_xcode_build_settings_path)
+14:     raise "#{generated_xcode_build_settings_path} must exist. Run flutter pub get first"
+15:   end
+16:   File.foreach(generated_xcode_build_settings_path) do |line|
+17:     matches = line.match(/FLUTTER_ROOT\=(.*)/)
+18:     return matches[1].strip if matches
+19:   end
+20:   raise "FLUTTER_ROOT not found"
+21: end
+22: 
+23: require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+24: 
+25: flutter_ios_podfile_setup
+26: 
+27: target 'Runner' do
+28:   use_frameworks!
+29:   use_modular_headers!
+30: 
+31:   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+32: end
+33: 
+34: post_install do |installer|
+35:   installer.pods_project.targets.each do |target|
+36:     flutter_additional_ios_build_settings(target)
+37:   end
+38: end
+</file>
+
+<file path="lib/presentation/screens/profile_screen.dart">
+  1: import 'dart:convert';
+  2: import 'dart:math';
+  3: import 'package:cloud_firestore/cloud_firestore.dart';
+  4: import 'package:crypto/crypto.dart';
+  5: import 'package:firebase_auth/firebase_auth.dart';
+  6: import 'package:flutter/material.dart';
+  7: import 'package:flutter/services.dart';
+  8: import 'package:flutter_riverpod/flutter_riverpod.dart';
+  9: import 'package:google_sign_in/google_sign_in.dart';
+ 10: import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+ 11: import '../providers/user_provider.dart';
+ 12: 
+ 13: class _PhoneMaskFormatter extends TextInputFormatter {
+ 14:   @override
+ 15:   TextEditingValue formatEditUpdate(
+ 16:       TextEditingValue oldValue, TextEditingValue newValue) {
+ 17:     final digits =
+ 18:         newValue.text.replaceAll(RegExp(r'\D'), '').substring(0, _min(newValue.text.replaceAll(RegExp(r'\D'), '').length, 11));
+ 19:     final text = _applyMask(digits);
+ 20:     return newValue.copyWith(
+ 21:       text: text,
+ 22:       selection: TextSelection.collapsed(offset: text.length),
+ 23:     );
+ 24:   }
+ 25: 
+ 26:   static int _min(int a, int b) => a < b ? a : b;
+ 27: 
+ 28:   static String _applyMask(String digits) {
+ 29:     if (digits.isEmpty) return '';
+ 30:     final buf = StringBuffer();
+ 31:     for (int i = 0; i < digits.length; i++) {
+ 32:       if (i == 0) buf.write('(');
+ 33:       buf.write(digits[i]);
+ 34:       if (i == 1) buf.write(')');
+ 35:       if (digits.length <= 10 && i == 5) buf.write('-');
+ 36:       if (digits.length == 11 && i == 6) buf.write('-');
+ 37:     }
+ 38:     return buf.toString();
+ 39:   }
+ 40: }
+ 41: 
+ 42: String _phoneMask(String digits) =>
+ 43:     _PhoneMaskFormatter._applyMask(digits.replaceAll(RegExp(r'\D'), ''));
+ 44: 
+ 45: class ProfileScreen extends ConsumerStatefulWidget {
+ 46:   const ProfileScreen({super.key});
+ 47:   @override
+ 48:   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+ 49: }
+ 50: class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+ 51:   final _formKey = GlobalKey<FormState>();
+ 52:   final _nameCtrl = TextEditingController();
+ 53:   final _emailCtrl = TextEditingController();
+ 54:   final _phoneCtrl = TextEditingController();
+ 55:   final _whatsappCtrl = TextEditingController();
+ 56:   final _addressCtrl = TextEditingController();
+ 57:   final _currentPassCtrl = TextEditingController();
+ 58:   final _newPassCtrl = TextEditingController();
+ 59:   final _confirmPassCtrl = TextEditingController();
+ 60:   bool _loading = false;
+ 61:   bool _showChangePassword = false;
+ 62:   bool _obscureCurrent = true;
+ 63:   bool _obscureNew = true;
+ 64:   bool _obscureConfirm = true;
+ 65:   bool _whatsappSameAsPhone = false;
+ 66:   bool _initialized = false;
+ 67:   @override
+ 68:   void dispose() {
+ 69:     _nameCtrl.dispose();
+ 70:     _emailCtrl.dispose();
+ 71:     _phoneCtrl.dispose();
+ 72:     _whatsappCtrl.dispose();
+ 73:     _addressCtrl.dispose();
+ 74:     _currentPassCtrl.dispose();
+ 75:     _newPassCtrl.dispose();
+ 76:     _confirmPassCtrl.dispose();
+ 77:     super.dispose();
+ 78:   }
+ 79:   void _initFields(String name, String email, String phone, String whatsapp, String address) {
+ 80:     if (!_initialized) {
+ 81:       _nameCtrl.text = name;
+ 82:       _emailCtrl.text = email;
+ 83:       _phoneCtrl.text = _phoneMask(phone);
+ 84:       _whatsappCtrl.text = _phoneMask(whatsapp);
+ 85:       _addressCtrl.text = address;
+ 86:       // Se telefone e whatsapp são iguais e não vazios, marca o checkbox
+ 87:       if (phone.isNotEmpty && phone == whatsapp) {
+ 88:         _whatsappSameAsPhone = true;
+ 89:       }
+ 90:       _initialized = true;
+ 91:     }
+ 92:   }
+ 93:   /// Remove tudo que não for dígito
+ 94:   String _onlyDigits(String v) => v.replaceAll(RegExp(r'\D'), '');
+ 95:   void _onPhoneChanged(String value) {
+ 96:     if (_whatsappSameAsPhone) {
+ 97:       _whatsappCtrl.text = value;
+ 98:     }
+ 99:   }
+100:   void _onWhatsappSameToggled(bool? checked) {
+101:     setState(() {
+102:       _whatsappSameAsPhone = checked ?? false;
+103:       if (_whatsappSameAsPhone) {
+104:         _whatsappCtrl.text = _phoneCtrl.text;
+105:       }
+106:     });
+107:   }
+108:   String _generateNonce([int length = 32]) {
+109:     const charset =
+110:         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+111:     final random = Random.secure();
+112:     return List.generate(
+113:         length, (_) => charset[random.nextInt(charset.length)]).join();
+114:   }
+115: 
+116:   String _sha256ofString(String input) =>
+117:       sha256.convert(utf8.encode(input)).toString();
+118: 
+119:   Future<AuthCredential?> _buildCredentialForReauth(User user) async {
+120:     final providers =
+121:         user.providerData.map((p) => p.providerId).toList();
+122: 
+123:     if (providers.contains('apple.com')) {
+124:       final rawNonce = _generateNonce();
+125:       final nonce = _sha256ofString(rawNonce);
+126:       final apple = await SignInWithApple.getAppleIDCredential(
+127:         scopes: [],
+128:         nonce: nonce,
+129:       );
+130:       return OAuthProvider('apple.com').credential(
+131:         idToken: apple.identityToken,
+132:         rawNonce: rawNonce,
+133:       );
+134:     }
+135: 
+136:     if (providers.contains('google.com')) {
+137:       final googleUser = await GoogleSignIn().signIn();
+138:       if (googleUser == null) return null;
+139:       final googleAuth = await googleUser.authentication;
+140:       return GoogleAuthProvider.credential(
+141:         accessToken: googleAuth.accessToken,
+142:         idToken: googleAuth.idToken,
+143:       );
+144:     }
+145: 
+146:     // E-mail / senha
+147:     final passCtrl = TextEditingController();
+148:     final confirmed = await showDialog<bool>(
+149:       context: context,
+150:       builder: (ctx) => AlertDialog(
+151:         title: const Text('Confirme sua senha'),
+152:         content: TextField(
+153:           controller: passCtrl,
+154:           obscureText: true,
+155:           autofocus: true,
+156:           decoration: const InputDecoration(
+157:             labelText: 'Senha atual',
+158:             border: OutlineInputBorder(),
+159:           ),
+160:         ),
+161:         actions: [
+162:           TextButton(
+163:             onPressed: () => Navigator.pop(ctx, false),
+164:             child: const Text('Cancelar'),
+165:           ),
+166:           FilledButton(
+167:             onPressed: () => Navigator.pop(ctx, true),
+168:             child: const Text('Confirmar'),
+169:           ),
+170:         ],
+171:       ),
+172:     );
+173:     if (confirmed != true || passCtrl.text.isEmpty) return null;
+174:     return EmailAuthProvider.credential(
+175:       email: user.email!,
+176:       password: passCtrl.text,
+177:     );
+178:   }
+179: 
+180:   Future<void> _deleteAccount() async {
+181:     final confirmed = await showDialog<bool>(
+182:       context: context,
+183:       builder: (ctx) => AlertDialog(
+184:         title: const Text('Excluir conta'),
+185:         content: const Text(
+186:           'Sua conta e todos os seus dados pessoais serão removidos permanentemente.\n\n'
+187:           'Agendamentos já realizados permanecem no histórico do estabelecimento.\n\n'
+188:           'Deseja continuar?',
+189:         ),
+190:         actions: [
+191:           TextButton(
+192:             onPressed: () => Navigator.pop(ctx, false),
+193:             child: const Text('Cancelar'),
+194:           ),
+195:           FilledButton(
+196:             style: FilledButton.styleFrom(backgroundColor: Colors.red),
+197:             onPressed: () => Navigator.pop(ctx, true),
+198:             child: const Text('Excluir conta'),
+199:           ),
+200:         ],
+201:       ),
+202:     );
+203:     if (confirmed != true || !mounted) return;
+204: 
+205:     setState(() => _loading = true);
+206:     try {
+207:       final user = FirebaseAuth.instance.currentUser;
+208:       if (user == null) return;
+209: 
+210:       final credential = await _buildCredentialForReauth(user);
+211:       if (credential == null) return; // usuário cancelou
+212: 
+213:       await user.reauthenticateWithCredential(credential);
+214: 
+215:       final db = FirebaseFirestore.instance;
+216:       final userDoc = await db.collection('users').doc(user.uid).get();
+217: 
+218:       // Remove identifier
+219:       if (userDoc.exists) {
+220:         final identifier =
+221:             (userDoc.data()?['identifier'] as String? ?? '').trim();
+222:         if (identifier.isNotEmpty) {
+223:           await db.collection('identifiers').doc(identifier).delete();
+224:         }
+225:       }
+226: 
+227:       // Remove documento do usuário
+228:       await db.collection('users').doc(user.uid).delete();
+229: 
+230:       // Remove conta Firebase Auth
+231:       await user.delete();
+232: 
+233:       // Firebase Auth signOut automático após delete; não há mais usuário
+234:     } on FirebaseAuthException catch (e) {
+235:       if (!mounted) return;
+236:       final msg = switch (e.code) {
+237:         'wrong-password' || 'invalid-credential' => 'Senha incorreta.',
+238:         'requires-recent-login' =>
+239:           'Saia e entre novamente antes de excluir a conta.',
+240:         _ => e.message ?? 'Erro ao excluir conta.',
+241:       };
+242:       ScaffoldMessenger.of(context)
+243:           .showSnackBar(SnackBar(content: Text(msg)));
+244:     } on SignInWithAppleAuthorizationException catch (e) {
+245:       if (e.code == AuthorizationErrorCode.canceled) return;
+246:       if (mounted) {
+247:         ScaffoldMessenger.of(context).showSnackBar(
+248:           SnackBar(content: Text('Erro Apple: ${e.message}')),
+249:         );
+250:       }
+251:     } catch (e) {
+252:       if (mounted) {
+253:         ScaffoldMessenger.of(context)
+254:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+255:       }
+256:     } finally {
+257:       if (mounted) setState(() => _loading = false);
+258:     }
+259:   }
+260: 
+261:   Future<void> _save() async {
+262:     if (!_formKey.currentState!.validate()) return;
+263:     final user = FirebaseAuth.instance.currentUser;
+264:     if (user == null) return;
+265:     setState(() => _loading = true);
+266:     try {
+267:       final newName = _nameCtrl.text.trim();
+268:       final newEmail = _emailCtrl.text.trim();
+269:       final newPhone = _onlyDigits(_phoneCtrl.text);
+270:       final newWhatsapp = _whatsappSameAsPhone
+271:           ? newPhone
+272:           : _onlyDigits(_whatsappCtrl.text);
+273:       final newAddress = _addressCtrl.text.trim();
+274:       // Atualiza email no Auth se mudou
+275:       if (newEmail != user.email) {
+276:         await user.verifyBeforeUpdateEmail(newEmail);
+277:         if (mounted) {
+278:           ScaffoldMessenger.of(context).showSnackBar(
+279:             const SnackBar(
+280:               content: Text(
+281:                 'Um link de verificacao foi enviado para o novo e-mail. '
+282:                 'O e-mail so sera atualizado apos confirmacao.',
+283:               ),
+284:               duration: Duration(seconds: 5),
+285:             ),
+286:           );
+287:         }
+288:       }
+289:       // Atualiza dados no Firestore
+290:       await FirebaseFirestore.instance
+291:           .collection('users')
+292:           .doc(user.uid)
+293:           .update({
+294:         'name': newName,
+295:         'phone': newPhone,
+296:         'whatsapp': newWhatsapp,
+297:         'address': newAddress,
+298:       });
+299:       // Atualiza senha se solicitado
+300:       if (_showChangePassword && _newPassCtrl.text.isNotEmpty) {
+301:         final credential = EmailAuthProvider.credential(
+302:           email: user.email!,
+303:           password: _currentPassCtrl.text,
+304:         );
+305:         await user.reauthenticateWithCredential(credential);
+306:         await user.updatePassword(_newPassCtrl.text);
+307:         _currentPassCtrl.clear();
+308:         _newPassCtrl.clear();
+309:         _confirmPassCtrl.clear();
+310:         setState(() => _showChangePassword = false);
+311:       }
+312:       if (mounted) {
+313:         ScaffoldMessenger.of(context).showSnackBar(
+314:           const SnackBar(content: Text('Perfil atualizado com sucesso.')),
+315:         );
+316:       }
+317:     } on FirebaseAuthException catch (e) {
+318:       if (!mounted) return;
+319:       final msg = switch (e.code) {
+320:         'wrong-password' => 'Senha atual incorreta.',
+321:         'requires-recent-login' =>
+322:           'Sessao expirada. Saia e entre novamente para alterar dados sensiveis.',
+323:         'email-already-in-use' => 'Este e-mail ja esta em uso.',
+324:         _ => e.message ?? 'Erro ao atualizar perfil.',
+325:       };
+326:       ScaffoldMessenger.of(context)
+327:           .showSnackBar(SnackBar(content: Text(msg)));
+328:     } catch (e) {
+329:       if (mounted) {
+330:         ScaffoldMessenger.of(context)
+331:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+332:       }
+333:     } finally {
+334:       if (mounted) setState(() => _loading = false);
+335:     }
+336:   }
+337:   @override
+338:   Widget build(BuildContext context) {
+339:     final userAsync = ref.watch(userRoleProvider);
+340:     return Scaffold(
+341:       appBar: AppBar(title: const Text('Meu Perfil')),
+342:       body: userAsync.when(
+343:         loading: () => const Center(child: CircularProgressIndicator()),
+344:         error: (e, _) => Center(child: Text('Erro: $e')),
+345:         data: (user) {
+346:           if (user == null) {
+347:             return const Center(child: CircularProgressIndicator());
+348:           }
+349:           _initFields(user.name, user.email, user.phone, user.whatsapp, user.address);
+350:           return SingleChildScrollView(
+351:             padding: const EdgeInsets.all(24),
+352:             child: Form(
+353:               key: _formKey,
+354:               child: Column(
+355:                 crossAxisAlignment: CrossAxisAlignment.stretch,
+356:                 children: [
+357:                   const SizedBox(height: 8),
+358:                   // Info somente leitura
+359:                   _InfoRow(
+360:                     label: 'Identificador',
+361:                     value: '${user.identifier} (${user.identifierType})',
+362:                   ),
+363:                   const SizedBox(height: 24),
+364:                   // Nome
+365:                   TextFormField(
+366:                     controller: _nameCtrl,
+367:                     textCapitalization: TextCapitalization.words,
+368:                     decoration: const InputDecoration(
+369:                       labelText: 'Nome completo',
+370:                       border: OutlineInputBorder(),
+371:                       prefixIcon: Icon(Icons.person_outline),
+372:                     ),
+373:                     validator: (v) => (v == null || v.trim().isEmpty)
+374:                         ? 'Informe seu nome'
+375:                         : null,
+376:                   ),
+377:                   const SizedBox(height: 16),
+378:                   // E-mail
+379:                   TextFormField(
+380:                     controller: _emailCtrl,
+381:                     keyboardType: TextInputType.emailAddress,
+382:                     decoration: const InputDecoration(
+383:                       labelText: 'E-mail',
+384:                       border: OutlineInputBorder(),
+385:                       prefixIcon: Icon(Icons.email_outlined),
+386:                       helperText:
+387:                           'Alterar envia um link de verificacao para o novo e-mail.',
+388:                     ),
+389:                     validator: (v) =>
+390:                         (v == null || !v.contains('@')) ? 'E-mail invalido' : null,
+391:                   ),
+392:                   const SizedBox(height: 16),
+393:                   // Telefone
+394:                   TextFormField(
+395:                     controller: _phoneCtrl,
+396:                     keyboardType: TextInputType.phone,
+397:                     inputFormatters: [_PhoneMaskFormatter()],
+398:                     onChanged: _onPhoneChanged,
+399:                     decoration: const InputDecoration(
+400:                       labelText: 'Telefone',
+401:                       border: OutlineInputBorder(),
+402:                       prefixIcon: Icon(Icons.phone_outlined),
+403:                       hintText: '(11)99999-8888',
+404:                     ),
+405:                     validator: (v) {
+406:                       if (v == null || v.isEmpty) return null;
+407:                       final digits = _onlyDigits(v);
+408:                       if (digits.length < 10 || digits.length > 11) {
+409:                         return 'Informe um telefone valido (10 ou 11 digitos)';
+410:                       }
+411:                       return null;
+412:                     },
+413:                   ),
+414:                   const SizedBox(height: 4),
+415:                   // Checkbox WhatsApp igual ao telefone
+416:                   Row(
+417:                     children: [
+418:                       Checkbox(
+419:                         value: _whatsappSameAsPhone,
+420:                         onChanged: _onWhatsappSameToggled,
+421:                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+422:                         visualDensity: VisualDensity.compact,
+423:                       ),
+424:                       const Text('WhatsApp igual ao telefone'),
+425:                     ],
+426:                   ),
+427:                   const SizedBox(height: 8),
+428:                   // WhatsApp
+429:                   TextFormField(
+430:                     controller: _whatsappCtrl,
+431:                     keyboardType: TextInputType.phone,
+432:                     inputFormatters: [_PhoneMaskFormatter()],
+433:                     enabled: !_whatsappSameAsPhone,
+434:                     decoration: InputDecoration(
+435:                       labelText: 'WhatsApp',
+436:                       border: const OutlineInputBorder(),
+437:                       prefixIcon: const Icon(Icons.chat_outlined),
+438:                       hintText: '(11)99999-8888',
+439:                       filled: _whatsappSameAsPhone,
+440:                       fillColor: _whatsappSameAsPhone
+441:                           ? Theme.of(context).disabledColor.withValues(alpha: 0.08)
+442:                           : null,
+443:                     ),
+444:                     validator: (v) {
+445:                       if (v == null || v.isEmpty) return null;
+446:                       final digits = _onlyDigits(v);
+447:                       if (digits.length < 10 || digits.length > 11) {
+448:                         return 'Informe um WhatsApp valido (10 ou 11 digitos)';
+449:                       }
+450:                       return null;
+451:                     },
+452:                   ),
+453:                   const SizedBox(height: 16),
+454:                   // Endereço
+455:                   TextFormField(
+456:                     controller: _addressCtrl,
+457:                     textCapitalization: TextCapitalization.sentences,
+458:                     decoration: const InputDecoration(
+459:                       labelText: 'Endereco',
+460:                       border: OutlineInputBorder(),
+461:                       prefixIcon: Icon(Icons.location_on_outlined),
+462:                       hintText: 'Rua, numero, bairro, cidade',
+463:                     ),
+464:                     maxLines: 2,
+465:                   ),
+466:                   const SizedBox(height: 24),
+467:                   // Seção de alteração de senha
+468:                   OutlinedButton.icon(
+469:                     onPressed: () => setState(
+470:                         () => _showChangePassword = !_showChangePassword),
+471:                     icon: Icon(_showChangePassword
+472:                         ? Icons.expand_less
+473:                         : Icons.lock_outline),
+474:                     label: Text(_showChangePassword
+475:                         ? 'Cancelar alteracao de senha'
+476:                         : 'Alterar senha'),
+477:                   ),
+478:                   if (_showChangePassword) ...[
+479:                     const SizedBox(height: 16),
+480:                     TextFormField(
+481:                       controller: _currentPassCtrl,
+482:                       obscureText: _obscureCurrent,
+483:                       decoration: InputDecoration(
+484:                         labelText: 'Senha atual',
+485:                         border: const OutlineInputBorder(),
+486:                         prefixIcon: const Icon(Icons.lock_outline),
+487:                         suffixIcon: IconButton(
+488:                           icon: Icon(_obscureCurrent
+489:                               ? Icons.visibility_outlined
+490:                               : Icons.visibility_off_outlined),
+491:                           onPressed: () => setState(
+492:                               () => _obscureCurrent = !_obscureCurrent),
+493:                         ),
+494:                       ),
+495:                       validator: (v) {
+496:                         if (!_showChangePassword) return null;
+497:                         if (v == null || v.isEmpty) return 'Informe a senha atual';
+498:                         return null;
+499:                       },
+500:                     ),
+501:                     const SizedBox(height: 12),
+502:                     TextFormField(
+503:                       controller: _newPassCtrl,
+504:                       obscureText: _obscureNew,
+505:                       decoration: InputDecoration(
+506:                         labelText: 'Nova senha',
+507:                         border: const OutlineInputBorder(),
+508:                         prefixIcon: const Icon(Icons.lock_outline),
+509:                         suffixIcon: IconButton(
+510:                           icon: Icon(_obscureNew
+511:                               ? Icons.visibility_outlined
+512:                               : Icons.visibility_off_outlined),
+513:                           onPressed: () =>
+514:                               setState(() => _obscureNew = !_obscureNew),
+515:                         ),
+516:                       ),
+517:                       validator: (v) {
+518:                         if (!_showChangePassword) return null;
+519:                         if (v == null || v.length < 6) {
+520:                           return 'Minimo 6 caracteres';
+521:                         }
+522:                         return null;
+523:                       },
+524:                     ),
+525:                     const SizedBox(height: 12),
+526:                     TextFormField(
+527:                       controller: _confirmPassCtrl,
+528:                       obscureText: _obscureConfirm,
+529:                       decoration: InputDecoration(
+530:                         labelText: 'Confirmar nova senha',
+531:                         border: const OutlineInputBorder(),
+532:                         prefixIcon: const Icon(Icons.lock_outline),
+533:                         suffixIcon: IconButton(
+534:                           icon: Icon(_obscureConfirm
+535:                               ? Icons.visibility_outlined
+536:                               : Icons.visibility_off_outlined),
+537:                           onPressed: () => setState(
+538:                               () => _obscureConfirm = !_obscureConfirm),
+539:                         ),
+540:                       ),
+541:                       validator: (v) {
+542:                         if (!_showChangePassword) return null;
+543:                         if (v != _newPassCtrl.text) {
+544:                           return 'As senhas nao coincidem';
+545:                         }
+546:                         return null;
+547:                       },
+548:                     ),
+549:                   ],
+550:                   const SizedBox(height: 32),
+551:                   SizedBox(
+552:                     height: 48,
+553:                     child: FilledButton(
+554:                       onPressed: _loading ? null : _save,
+555:                       child: _loading
+556:                           ? const SizedBox(
+557:                               height: 20,
+558:                               width: 20,
+559:                               child: CircularProgressIndicator(strokeWidth: 2),
+560:                             )
+561:                           : const Text('Salvar alteracoes'),
+562:                     ),
+563:                   ),
+564:                   const SizedBox(height: 40),
+565:                   const Divider(),
+566:                   const SizedBox(height: 8),
+567:                   SizedBox(
+568:                     width: double.infinity,
+569:                     child: OutlinedButton.icon(
+570:                       onPressed: _loading ? null : _deleteAccount,
+571:                       icon: const Icon(Icons.delete_forever_outlined,
+572:                           color: Colors.red),
+573:                       label: const Text(
+574:                         'Excluir minha conta',
+575:                         style: TextStyle(color: Colors.red),
+576:                       ),
+577:                       style: OutlinedButton.styleFrom(
+578:                         side: const BorderSide(color: Colors.red),
+579:                       ),
+580:                     ),
+581:                   ),
+582:                   const SizedBox(height: 24),
+583:                 ],
+584:               ),
+585:             ),
+586:           );
+587:         },
+588:       ),
+589:     );
+590:   }
+591: }
+592: class _InfoRow extends StatelessWidget {
+593:   final String label;
+594:   final String value;
+595:   const _InfoRow({required this.label, required this.value});
+596:   @override
+597:   Widget build(BuildContext context) {
+598:     return Row(
+599:       children: [
+600:         Text(
+601:           '$label: ',
+602:           style: const TextStyle(
+603:               fontWeight: FontWeight.bold, color: Colors.grey),
+604:         ),
+605:         Text(value),
+606:       ],
+607:     );
+608:   }
+609: }
+</file>
+
+<file path="lib/presentation/screens/service_detail_screen.dart">
+  1: import 'package:firebase_auth/firebase_auth.dart';
+  2: import 'package:flutter/material.dart';
+  3: import 'package:flutter_riverpod/flutter_riverpod.dart';
+  4: import 'package:lavamax/core/constants/app_colors.dart';
+  5: import 'package:lavamax/core/constants/app_dimensions.dart';
+  6: import 'package:lavamax/core/utils/formatters.dart';
+  7: import 'package:lavamax/data/models/service_model.dart';
+  8: import 'package:lavamax/presentation/providers/service_provider.dart';
+  9: import 'package:lavamax/presentation/providers/branch_provider.dart';
+ 10: import 'package:lavamax/presentation/providers/consultant_provider.dart';
+ 11: import 'package:lavamax/presentation/providers/slot_provider.dart';
+ 12: import 'package:lavamax/presentation/screens/vehicle_selection_screen.dart';
+ 13: import 'package:lavamax/presentation/widgets/sprite_icon.dart';
+ 14: 
+ 15: class ServiceDetailScreen extends ConsumerWidget {
+ 16:   final ServiceModel service;
+ 17:   final bool isGuestMode;
+ 18: 
+ 19:   const ServiceDetailScreen({
+ 20:     super.key,
+ 21:     required this.service,
+ 22:     this.isGuestMode = false,
+ 23:   });
+ 24: 
+ 25:   @override
+ 26:   Widget build(BuildContext context, WidgetRef ref) {
+ 27:     // Fotos: usa imageUrls se disponível no futuro; por ora usa iconUrl como preview único
+ 28:     final hasPhoto = service.iconUrl.isNotEmpty;
+ 29: 
+ 30:     return Scaffold(
+ 31:       backgroundColor: AppColors.grey50,
+ 32:       body: CustomScrollView(
+ 33:         slivers: [
+ 34:           // ── AppBar com imagem/ícone ──────────────────────────
+ 35:           SliverAppBar(
+ 36:             expandedHeight: 240,
+ 37:             pinned: true,
+ 38:             backgroundColor: AppColors.primary,
+ 39:             foregroundColor: AppColors.white,
+ 40:             flexibleSpace: FlexibleSpaceBar(
+ 41:               background: _ServiceHero(service: service, hasPhoto: hasPhoto),
+ 42:             ),
+ 43:           ),
+ 44: 
+ 45:           // ── Conteúdo ─────────────────────────────────────────
+ 46:           SliverToBoxAdapter(
+ 47:             child: Padding(
+ 48:               padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+ 49:               child: Column(
+ 50:                 crossAxisAlignment: CrossAxisAlignment.start,
+ 51:                 children: [
+ 52:                   // Nome
+ 53:                   Text(
+ 54:                     service.name,
+ 55:                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+ 56:                           fontWeight: FontWeight.bold,
+ 57:                           color: AppColors.primary,
+ 58:                         ),
+ 59:                   ),
+ 60:                   const SizedBox(height: AppDimensions.paddingMedium),
+ 61: 
+ 62:                   // Preço e duração
+ 63:                   Row(
+ 64:                     children: [
+ 65:                       _InfoChip(
+ 66:                         icon: Icons.attach_money,
+ 67:                         label: formatBrl(service.price),
+ 68:                         color: AppColors.success,
+ 69:                       ),
+ 70:                       const SizedBox(width: AppDimensions.paddingSmall),
+ 71:                       _InfoChip(
+ 72:                         icon: Icons.timer_outlined,
+ 73:                         label: _formatDuration(service.durationMinutes),
+ 74:                         color: AppColors.accentDark,
+ 75:                       ),
+ 76:                     ],
+ 77:                   ),
+ 78: 
+ 79:                   const SizedBox(height: AppDimensions.paddingLarge),
+ 80: 
+ 81:                   // Descrição
+ 82:                   Text(
+ 83:                     'Sobre o serviço',
+ 84:                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
+ 85:                           fontWeight: FontWeight.bold,
+ 86:                           color: AppColors.primary,
+ 87:                         ),
+ 88:                   ),
+ 89:                   const SizedBox(height: AppDimensions.paddingSmall),
+ 90:                   Text(
+ 91:                     service.description,
+ 92:                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+ 93:                           color: AppColors.grey700,
+ 94:                           height: 1.6,
+ 95:                         ),
+ 96:                   ),
+ 97: 
+ 98:                   const SizedBox(height: AppDimensions.paddingXLarge),
+ 99:                 ],
+100:               ),
+101:             ),
+102:           ),
+103:         ],
+104:       ),
+105: 
+106:       // ── Botão fixo no rodapé ──────────────────────────────────
+107:       bottomNavigationBar: SafeArea(
+108:         child: Padding(
+109:           padding: const EdgeInsets.fromLTRB(
+110:             AppDimensions.paddingLarge,
+111:             AppDimensions.paddingSmall,
+112:             AppDimensions.paddingLarge,
+113:             AppDimensions.paddingMedium,
+114:           ),
+115:           child: FilledButton.icon(
+116:             onPressed: () => _agendar(context, ref),
+117:             icon: const Icon(Icons.calendar_month_outlined),
+118:             label: const Text('Agendar este serviço'),
+119:             style: FilledButton.styleFrom(
+120:               minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
+121:               backgroundColor: AppColors.accentDark,
+122:               foregroundColor: AppColors.white,
+123:               textStyle: const TextStyle(
+124:                 fontSize: 16,
+125:                 fontWeight: FontWeight.bold,
+126:               ),
+127:             ),
+128:           ),
+129:         ),
+130:       ),
+131:     );
+132:   }
+133: 
+134:   void _agendar(BuildContext context, WidgetRef ref) {
+135:     if (isGuestMode || FirebaseAuth.instance.currentUser == null) {
+136:       _showLoginRequired(context);
+137:       return;
+138:     }
+139: 
+140:     ref.read(selectedServiceProvider.notifier).state = service;
+141:     ref.read(selectedBranchProvider.notifier).state = null;
+142:     ref.read(selectedDateProvider.notifier).state = null;
+143:     ref.read(selectedSlotProvider.notifier).state = null;
+144:     ref.read(selectedConsultantProvider.notifier).state = null;
+145:     ref.read(consultantHasConflictProvider.notifier).state = false;
+146: 
+147:     Navigator.of(context).push(
+148:       MaterialPageRoute(
+149:         builder: (_) => const VehicleSelectionScreen(isFromBooking: true),
+150:       ),
+151:     );
+152:   }
+153: 
+154:   void _showLoginRequired(BuildContext context) {
+155:     showDialog(
+156:       context: context,
+157:       builder: (ctx) => AlertDialog(
+158:         title: const Text('Login necessário'),
+159:         content: const Text(
+160:           'Para agendar um serviço, você precisa entrar na sua conta ou criar uma gratuitamente.',
+161:         ),
+162:         actions: [
+163:           TextButton(
+164:             onPressed: () => Navigator.of(ctx).pop(),
+165:             child: const Text('Agora não'),
+166:           ),
+167:           FilledButton(
+168:             onPressed: () {
+169:               Navigator.of(ctx).pop();
+170:               Navigator.of(context).popUntil((route) => route.isFirst);
+171:             },
+172:             child: const Text('Entrar / Cadastrar'),
+173:           ),
+174:         ],
+175:       ),
+176:     );
+177:   }
+178: 
+179:   String _formatDuration(int minutes) {
+180:     if (minutes < 60) return '${minutes}min';
+181:     final h = minutes ~/ 60;
+182:     final m = minutes % 60;
+183:     return m == 0 ? '${h}h' : '${h}h ${m}min';
+184:   }
+185: }
+186: 
+187: // ── Hero: imagem grande ou ícone sprite centralizado ──────────
+188: class _ServiceHero extends StatelessWidget {
+189:   final ServiceModel service;
+190:   final bool hasPhoto;
+191: 
+192:   const _ServiceHero({required this.service, required this.hasPhoto});
+193: 
+194:   @override
+195:   Widget build(BuildContext context) {
+196:     return Container(
+197:       decoration: BoxDecoration(
+198:         color: AppColors.primary,
+199:         gradient: LinearGradient(
+200:           begin: Alignment.topCenter,
+201:           end: Alignment.bottomCenter,
+202:           colors: [
+203:             AppColors.primaryLight,
+204:             AppColors.primary,
+205:           ],
+206:         ),
+207:       ),
+208:       child: Center(
+209:         child: Column(
+210:           mainAxisAlignment: MainAxisAlignment.center,
+211:           children: [
+212:             const SizedBox(height: 48), // espaço abaixo da status bar
+213:             Container(
+214:               width: 120,
+215:               height: 120,
+216:               decoration: BoxDecoration(
+217:                 color: AppColors.accent.withValues(alpha: 0.12),
+218:                 borderRadius: BorderRadius.circular(24),
+219:               ),
+220:               child: Padding(
+221:                 padding: const EdgeInsets.all(12),
+222:                 child: SpriteIcon(iconKey: service.iconUrl, size: 96),
+223:               ),
+224:             ),
+225:           ],
+226:         ),
+227:       ),
+228:     );
+229:   }
+230: }
+231: 
+232: // ── Chip de info (preço / duração) ────────────────────────────
+233: class _InfoChip extends StatelessWidget {
+234:   final IconData icon;
+235:   final String label;
+236:   final Color color;
+237: 
+238:   const _InfoChip({
+239:     required this.icon,
+240:     required this.label,
+241:     required this.color,
+242:   });
+243: 
+244:   @override
+245:   Widget build(BuildContext context) {
+246:     return Container(
+247:       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+248:       decoration: BoxDecoration(
+249:         color: color.withValues(alpha: 0.1),
+250:         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+251:         border: Border.all(color: color.withValues(alpha: 0.3)),
+252:       ),
+253:       child: Row(
+254:         mainAxisSize: MainAxisSize.min,
+255:         children: [
+256:           Icon(icon, size: 16, color: color),
+257:           const SizedBox(width: 6),
+258:           Text(
+259:             label,
+260:             style: TextStyle(
+261:               fontSize: 14,
+262:               fontWeight: FontWeight.bold,
+263:               color: color,
+264:             ),
+265:           ),
+266:         ],
+267:       ),
+268:     );
+269:   }
+270: }
+</file>
+
+<file path="lib/presentation/screens/services_catalog_screen.dart">
+  1: import 'package:flutter/material.dart';
+  2: import 'package:flutter_riverpod/flutter_riverpod.dart';
+  3: import 'package:lavamax/core/constants/app_colors.dart';
+  4: import 'package:lavamax/core/constants/app_dimensions.dart';
+  5: import 'package:lavamax/data/models/service_model.dart';
+  6: import 'package:lavamax/presentation/providers/service_provider.dart';
+  7: import 'package:lavamax/presentation/screens/service_detail_screen.dart';
+  8: import 'package:lavamax/presentation/widgets/sprite_icon.dart';
+  9: 
+ 10: class ServicesCatalogScreen extends ConsumerWidget {
+ 11:   final bool isGuestMode;
+ 12: 
+ 13:   const ServicesCatalogScreen({super.key, this.isGuestMode = false});
+ 14: 
+ 15:   @override
+ 16:   Widget build(BuildContext context, WidgetRef ref) {
+ 17:     final servicesAsync = ref.watch(servicesProvider);
+ 18: 
+ 19:     return Scaffold(
+ 20:       appBar: AppBar(
+ 21:         backgroundColor: AppColors.primary,
+ 22:         foregroundColor: AppColors.white,
+ 23:         elevation: 0,
+ 24:         leading: IconButton(
+ 25:           icon: const Icon(Icons.arrow_back),
+ 26:           onPressed: () => Navigator.of(context).pop(),
+ 27:         ),
+ 28:         title: Image.asset(
+ 29:           'assets/images/lavamax_logo.png',
+ 30:           height: 36,
+ 31:           fit: BoxFit.contain,
+ 32:         ),
+ 33:         centerTitle: true,
+ 34:       ),
+ 35:       body: Column(
+ 36:         children: [
+ 37:           if (isGuestMode)
+ 38:             Material(
+ 39:               color: AppColors.accentDark,
+ 40:               child: InkWell(
+ 41:                 onTap: () => Navigator.of(context).pop(),
+ 42:                 child: Padding(
+ 43:                   padding:
+ 44:                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+ 45:                   child: Row(
+ 46:                     children: [
+ 47:                       const Icon(Icons.lock_outline,
+ 48:                           color: Colors.white, size: 16),
+ 49:                       const SizedBox(width: 8),
+ 50:                       const Expanded(
+ 51:                         child: Text(
+ 52:                           'Para agendar, faça login ou crie uma conta.',
+ 53:                           style: TextStyle(color: Colors.white, fontSize: 13),
+ 54:                         ),
+ 55:                       ),
+ 56:                       const SizedBox(width: 8),
+ 57:                       OutlinedButton(
+ 58:                         onPressed: () => Navigator.of(context).pop(),
+ 59:                         style: OutlinedButton.styleFrom(
+ 60:                           foregroundColor: Colors.white,
+ 61:                           side: const BorderSide(color: Colors.white70),
+ 62:                           padding: const EdgeInsets.symmetric(
+ 63:                               horizontal: 12, vertical: 6),
+ 64:                           minimumSize: Size.zero,
+ 65:                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+ 66:                           textStyle: const TextStyle(fontSize: 12),
+ 67:                         ),
+ 68:                         child: const Text('Entrar'),
+ 69:                       ),
+ 70:                     ],
+ 71:                   ),
+ 72:                 ),
+ 73:               ),
+ 74:             ),
+ 75:           Expanded(
+ 76:             child: servicesAsync.when(
+ 77:         loading: () => const Center(child: CircularProgressIndicator()),
+ 78:         error: (e, _) => Center(
+ 79:           child: Column(
+ 80:             mainAxisAlignment: MainAxisAlignment.center,
+ 81:             children: [
+ 82:               const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+ 83:               const SizedBox(height: 12),
+ 84:               Text('Erro ao carregar serviços: $e',
+ 85:                   textAlign: TextAlign.center),
+ 86:               const SizedBox(height: 16),
+ 87:               FilledButton(
+ 88:                 onPressed: () => ref.invalidate(servicesProvider),
+ 89:                 child: const Text('Tentar novamente'),
+ 90:               ),
+ 91:             ],
+ 92:           ),
+ 93:         ),
+ 94:         data: (services) {
+ 95:           if (services.isEmpty) {
+ 96:             return const Center(child: Text('Nenhum serviço disponível.'));
+ 97:           }
+ 98:           final sorted = [...services]
+ 99:             ..sort((a, b) {
+100:               final byOrder = a.sortOrder.compareTo(b.sortOrder);
+101:               if (byOrder != 0) return byOrder;
+102:               return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+103:             });
+104:           return GridView.builder(
+105:             padding:
+106:                 const EdgeInsets.all(AppDimensions.screenPaddingHorizontal),
+107:             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+108:               crossAxisCount: 2,
+109:               crossAxisSpacing: AppDimensions.paddingMedium,
+110:               mainAxisSpacing: AppDimensions.paddingMedium,
+111:               childAspectRatio: 1.4,
+112:             ),
+113:             itemCount: sorted.length,
+114:             itemBuilder: (context, index) {
+115:               return _ServiceCard(
+116:                 service: sorted[index],
+117:                 isGuestMode: isGuestMode,
+118:               );
+119:             },
+120:           );
+121:         },
+122:             ),
+123:           ),
+124:         ],
+125:       ),
+126:     );
+127:   }
+128: }
+129: 
+130: class _ServiceCard extends StatelessWidget {
+131:   final ServiceModel service;
+132:   final bool isGuestMode;
+133: 
+134:   const _ServiceCard({required this.service, this.isGuestMode = false});
+135: 
+136:   @override
+137:   Widget build(BuildContext context) {
+138:     return Card(
+139:       shape: RoundedRectangleBorder(
+140:         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+141:         side: BorderSide(
+142:           color: AppColors.accent.withValues(alpha: 0.25),
+143:           width: 1,
+144:         ),
+145:       ),
+146:       child: InkWell(
+147:         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+148:         onTap: () => Navigator.of(context).push(
+149:           MaterialPageRoute(
+150:             builder: (_) =>
+151:                 ServiceDetailScreen(service: service, isGuestMode: isGuestMode),
+152:           ),
+153:         ),
+154:         child: Padding(
+155:           padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+156:           child: Column(
+157:             mainAxisAlignment: MainAxisAlignment.center,
+158:             children: [
+159:               SpriteIcon(iconKey: service.iconUrl, size: 40),
+160:               const SizedBox(height: 6),
+161:               Text(
+162:                 service.name,
+163:                 maxLines: 2,
+164:                 overflow: TextOverflow.ellipsis,
+165:                 textAlign: TextAlign.center,
+166:                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
+167:                       fontWeight: FontWeight.bold,
+168:                       color: AppColors.primary,
+169:                       height: 1.3,
+170:                     ),
+171:               ),
+172:             ],
+173:           ),
+174:         ),
+175:       ),
+176:     );
+177:   }
+178: }
+</file>
+
 <file path="pubspec.lock">
    1: # Generated by pub
    2: # See https://dart.dev/tools/pub/glossary#lockfile
@@ -9827,7 +9723,7 @@ This section contains the contents of the repository's files.
  138:     source: hosted
  139:     version: "0.3.5+2"
  140:   crypto:
- 141:     dependency: transitive
+ 141:     dependency: "direct main"
  142:     description:
  143:       name: crypto
  144:       sha256: c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf
@@ -10513,382 +10409,1057 @@ This section contains the contents of the repository's files.
  824:       url: "https://pub.dev"
  825:     source: hosted
  826:     version: "2.4.1"
- 827:   sky_engine:
- 828:     dependency: transitive
- 829:     description: flutter
- 830:     source: sdk
- 831:     version: "0.0.0"
- 832:   source_span:
- 833:     dependency: transitive
- 834:     description:
- 835:       name: source_span
- 836:       sha256: "56a02f1f4cd1a2d96303c0144c93bd6d909eea6bee6bf5a0e0b685edbd4c47ab"
- 837:       url: "https://pub.dev"
- 838:     source: hosted
- 839:     version: "1.10.2"
- 840:   stack_trace:
- 841:     dependency: transitive
- 842:     description:
- 843:       name: stack_trace
- 844:       sha256: "8b27215b45d22309b5cddda1aa2b19bdfec9df0e765f2de506401c071d38d1b1"
- 845:       url: "https://pub.dev"
- 846:     source: hosted
- 847:     version: "1.12.1"
- 848:   state_notifier:
- 849:     dependency: transitive
- 850:     description:
- 851:       name: state_notifier
- 852:       sha256: b8677376aa54f2d7c58280d5a007f9e8774f1968d1fb1c096adcb4792fba29bb
- 853:       url: "https://pub.dev"
- 854:     source: hosted
- 855:     version: "1.0.0"
- 856:   stream_channel:
+ 827:   sign_in_with_apple:
+ 828:     dependency: "direct main"
+ 829:     description:
+ 830:       name: sign_in_with_apple
+ 831:       sha256: e84a62e17b7e463abf0a64ce826c2cd1f0b72dff07b7b275e32d5302d76fb4c5
+ 832:       url: "https://pub.dev"
+ 833:     source: hosted
+ 834:     version: "6.1.4"
+ 835:   sign_in_with_apple_platform_interface:
+ 836:     dependency: transitive
+ 837:     description:
+ 838:       name: sign_in_with_apple_platform_interface
+ 839:       sha256: c2ef2ce6273fce0c61acd7e9ff5be7181e33d7aa2b66508b39418b786cca2119
+ 840:       url: "https://pub.dev"
+ 841:     source: hosted
+ 842:     version: "1.1.0"
+ 843:   sign_in_with_apple_web:
+ 844:     dependency: transitive
+ 845:     description:
+ 846:       name: sign_in_with_apple_web
+ 847:       sha256: "2f7c38368f49e3f2043bca4b46a4a61aaae568c140a79aa0675dc59ad0ca49bc"
+ 848:       url: "https://pub.dev"
+ 849:     source: hosted
+ 850:     version: "2.1.1"
+ 851:   sky_engine:
+ 852:     dependency: transitive
+ 853:     description: flutter
+ 854:     source: sdk
+ 855:     version: "0.0.0"
+ 856:   source_span:
  857:     dependency: transitive
  858:     description:
- 859:       name: stream_channel
- 860:       sha256: "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d"
+ 859:       name: source_span
+ 860:       sha256: "56a02f1f4cd1a2d96303c0144c93bd6d909eea6bee6bf5a0e0b685edbd4c47ab"
  861:       url: "https://pub.dev"
  862:     source: hosted
- 863:     version: "2.1.4"
- 864:   string_scanner:
+ 863:     version: "1.10.2"
+ 864:   stack_trace:
  865:     dependency: transitive
  866:     description:
- 867:       name: string_scanner
- 868:       sha256: "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43"
+ 867:       name: stack_trace
+ 868:       sha256: "8b27215b45d22309b5cddda1aa2b19bdfec9df0e765f2de506401c071d38d1b1"
  869:       url: "https://pub.dev"
  870:     source: hosted
- 871:     version: "1.4.1"
- 872:   term_glyph:
+ 871:     version: "1.12.1"
+ 872:   state_notifier:
  873:     dependency: transitive
  874:     description:
- 875:       name: term_glyph
- 876:       sha256: "7f554798625ea768a7518313e58f83891c7f5024f88e46e7182a4558850a4b8e"
+ 875:       name: state_notifier
+ 876:       sha256: b8677376aa54f2d7c58280d5a007f9e8774f1968d1fb1c096adcb4792fba29bb
  877:       url: "https://pub.dev"
  878:     source: hosted
- 879:     version: "1.2.2"
- 880:   test_api:
+ 879:     version: "1.0.0"
+ 880:   stream_channel:
  881:     dependency: transitive
  882:     description:
- 883:       name: test_api
- 884:       sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
+ 883:       name: stream_channel
+ 884:       sha256: "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d"
  885:       url: "https://pub.dev"
  886:     source: hosted
- 887:     version: "0.7.10"
- 888:   typed_data:
+ 887:     version: "2.1.4"
+ 888:   string_scanner:
  889:     dependency: transitive
  890:     description:
- 891:       name: typed_data
- 892:       sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
+ 891:       name: string_scanner
+ 892:       sha256: "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43"
  893:       url: "https://pub.dev"
  894:     source: hosted
- 895:     version: "1.4.0"
- 896:   url_launcher_linux:
+ 895:     version: "1.4.1"
+ 896:   term_glyph:
  897:     dependency: transitive
  898:     description:
- 899:       name: url_launcher_linux
- 900:       sha256: d5e14138b3bc193a0f63c10a53c94b91d399df0512b1f29b94a043db7482384a
+ 899:       name: term_glyph
+ 900:       sha256: "7f554798625ea768a7518313e58f83891c7f5024f88e46e7182a4558850a4b8e"
  901:       url: "https://pub.dev"
  902:     source: hosted
- 903:     version: "3.2.2"
- 904:   url_launcher_platform_interface:
+ 903:     version: "1.2.2"
+ 904:   test_api:
  905:     dependency: transitive
  906:     description:
- 907:       name: url_launcher_platform_interface
- 908:       sha256: "552f8a1e663569be95a8190206a38187b531910283c3e982193e4f2733f01029"
+ 907:       name: test_api
+ 908:       sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
  909:       url: "https://pub.dev"
  910:     source: hosted
- 911:     version: "2.3.2"
- 912:   url_launcher_web:
+ 911:     version: "0.7.10"
+ 912:   typed_data:
  913:     dependency: transitive
  914:     description:
- 915:       name: url_launcher_web
- 916:       sha256: d0412fcf4c6b31ecfdb7762359b7206ffba3bbffd396c6d9f9c4616ece476c1f
+ 915:       name: typed_data
+ 916:       sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
  917:       url: "https://pub.dev"
  918:     source: hosted
- 919:     version: "2.4.2"
- 920:   url_launcher_windows:
+ 919:     version: "1.4.0"
+ 920:   url_launcher_linux:
  921:     dependency: transitive
  922:     description:
- 923:       name: url_launcher_windows
- 924:       sha256: "712c70ab1b99744ff066053cbe3e80c73332b38d46e5e945c98689b2e66fc15f"
+ 923:       name: url_launcher_linux
+ 924:       sha256: d5e14138b3bc193a0f63c10a53c94b91d399df0512b1f29b94a043db7482384a
  925:       url: "https://pub.dev"
  926:     source: hosted
- 927:     version: "3.1.5"
- 928:   uuid:
- 929:     dependency: "direct main"
+ 927:     version: "3.2.2"
+ 928:   url_launcher_platform_interface:
+ 929:     dependency: transitive
  930:     description:
- 931:       name: uuid
- 932:       sha256: "1fef9e8e11e2991bb773070d4656b7bd5d850967a2456cfc83cf47925ba79489"
+ 931:       name: url_launcher_platform_interface
+ 932:       sha256: "552f8a1e663569be95a8190206a38187b531910283c3e982193e4f2733f01029"
  933:       url: "https://pub.dev"
  934:     source: hosted
- 935:     version: "4.5.3"
- 936:   vector_graphics:
+ 935:     version: "2.3.2"
+ 936:   url_launcher_web:
  937:     dependency: transitive
  938:     description:
- 939:       name: vector_graphics
- 940:       sha256: a4f059dc26fc8295b5921376600a194c4ec7d55e72f2fe4c7d2831e103d461e6
+ 939:       name: url_launcher_web
+ 940:       sha256: d0412fcf4c6b31ecfdb7762359b7206ffba3bbffd396c6d9f9c4616ece476c1f
  941:       url: "https://pub.dev"
  942:     source: hosted
- 943:     version: "1.1.19"
- 944:   vector_graphics_codec:
+ 943:     version: "2.4.2"
+ 944:   url_launcher_windows:
  945:     dependency: transitive
  946:     description:
- 947:       name: vector_graphics_codec
- 948:       sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
+ 947:       name: url_launcher_windows
+ 948:       sha256: "712c70ab1b99744ff066053cbe3e80c73332b38d46e5e945c98689b2e66fc15f"
  949:       url: "https://pub.dev"
  950:     source: hosted
- 951:     version: "1.1.13"
- 952:   vector_graphics_compiler:
- 953:     dependency: transitive
+ 951:     version: "3.1.5"
+ 952:   uuid:
+ 953:     dependency: "direct main"
  954:     description:
- 955:       name: vector_graphics_compiler
- 956:       sha256: "5a88dd14c0954a5398af544651c7fb51b457a2a556949bfb25369b210ef73a74"
+ 955:       name: uuid
+ 956:       sha256: "1fef9e8e11e2991bb773070d4656b7bd5d850967a2456cfc83cf47925ba79489"
  957:       url: "https://pub.dev"
  958:     source: hosted
- 959:     version: "1.2.0"
- 960:   vector_math:
+ 959:     version: "4.5.3"
+ 960:   vector_graphics:
  961:     dependency: transitive
  962:     description:
- 963:       name: vector_math
- 964:       sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b
+ 963:       name: vector_graphics
+ 964:       sha256: a4f059dc26fc8295b5921376600a194c4ec7d55e72f2fe4c7d2831e103d461e6
  965:       url: "https://pub.dev"
  966:     source: hosted
- 967:     version: "2.2.0"
- 968:   vm_service:
+ 967:     version: "1.1.19"
+ 968:   vector_graphics_codec:
  969:     dependency: transitive
  970:     description:
- 971:       name: vm_service
- 972:       sha256: "45caa6c5917fa127b5dbcfbd1fa60b14e583afdc08bfc96dda38886ca252eb60"
+ 971:       name: vector_graphics_codec
+ 972:       sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
  973:       url: "https://pub.dev"
  974:     source: hosted
- 975:     version: "15.0.2"
- 976:   web:
+ 975:     version: "1.1.13"
+ 976:   vector_graphics_compiler:
  977:     dependency: transitive
  978:     description:
- 979:       name: web
- 980:       sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
+ 979:       name: vector_graphics_compiler
+ 980:       sha256: "5a88dd14c0954a5398af544651c7fb51b457a2a556949bfb25369b210ef73a74"
  981:       url: "https://pub.dev"
  982:     source: hosted
- 983:     version: "1.1.1"
- 984:   win32:
+ 983:     version: "1.2.0"
+ 984:   vector_math:
  985:     dependency: transitive
  986:     description:
- 987:       name: win32
- 988:       sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
+ 987:       name: vector_math
+ 988:       sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b
  989:       url: "https://pub.dev"
  990:     source: hosted
- 991:     version: "5.15.0"
- 992:   xdg_directories:
+ 991:     version: "2.2.0"
+ 992:   vm_service:
  993:     dependency: transitive
  994:     description:
- 995:       name: xdg_directories
- 996:       sha256: "7a3f37b05d989967cdddcbb571f1ea834867ae2faa29725fd085180e0883aa15"
+ 995:       name: vm_service
+ 996:       sha256: "45caa6c5917fa127b5dbcfbd1fa60b14e583afdc08bfc96dda38886ca252eb60"
  997:       url: "https://pub.dev"
  998:     source: hosted
- 999:     version: "1.1.0"
-1000:   xml:
+ 999:     version: "15.0.2"
+1000:   web:
 1001:     dependency: transitive
 1002:     description:
-1003:       name: xml
-1004:       sha256: "971043b3a0d3da28727e40ed3e0b5d18b742fa5a68665cca88e74b7876d5e025"
+1003:       name: web
+1004:       sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
 1005:       url: "https://pub.dev"
 1006:     source: hosted
-1007:     version: "6.6.1"
-1008:   yaml:
+1007:     version: "1.1.1"
+1008:   win32:
 1009:     dependency: transitive
 1010:     description:
-1011:       name: yaml
-1012:       sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce
+1011:       name: win32
+1012:       sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
 1013:       url: "https://pub.dev"
 1014:     source: hosted
-1015:     version: "3.1.3"
-1016: sdks:
-1017:   dart: ">=3.11.0 <4.0.0"
-1018:   flutter: ">=3.38.4"
-</file>
-
-<file path="storage.rules">
- 1: rules_version = '2';
- 2: // Craft rules based on data in your Firestore database
- 3: // allow write: if firestore.get(
- 4: //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
- 5: service firebase.storage {
- 6:   match /b/{bucket}/o {
- 7:     // This rule allows anyone with your Storage bucket reference to view, edit,
- 8:     // and delete all data in your Storage bucket. It is useful for getting
- 9:     // started, but it is configured to expire after 30 days because it
-10:     // leaves your app open to attackers. At that time, all client
-11:     // requests to your Storage bucket will be denied.
-12:     //
-13:     // Make sure to write security rules for your app before that time, or else
-14:     // all client requests to your Storage bucket will be denied until you Update
-15:     // your rules
-16:     match /{allPaths=**} {
-17:       allow read, write: if request.time < timestamp.date(2026, 3, 29);
-18:     }
-19:   }
-20: }
+1015:     version: "5.15.0"
+1016:   xdg_directories:
+1017:     dependency: transitive
+1018:     description:
+1019:       name: xdg_directories
+1020:       sha256: "7a3f37b05d989967cdddcbb571f1ea834867ae2faa29725fd085180e0883aa15"
+1021:       url: "https://pub.dev"
+1022:     source: hosted
+1023:     version: "1.1.0"
+1024:   xml:
+1025:     dependency: transitive
+1026:     description:
+1027:       name: xml
+1028:       sha256: "971043b3a0d3da28727e40ed3e0b5d18b742fa5a68665cca88e74b7876d5e025"
+1029:       url: "https://pub.dev"
+1030:     source: hosted
+1031:     version: "6.6.1"
+1032:   yaml:
+1033:     dependency: transitive
+1034:     description:
+1035:       name: yaml
+1036:       sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce
+1037:       url: "https://pub.dev"
+1038:     source: hosted
+1039:     version: "3.1.3"
+1040: sdks:
+1041:   dart: ">=3.11.0 <4.0.0"
+1042:   flutter: ">=3.38.4"
 </file>
 
 <file path="test/widget_test.dart">
- 1: // This is a basic Flutter widget test.
- 2: //
- 3: // To perform an interaction with a widget in your test, use the WidgetTester
- 4: // utility in the flutter_test package. For example, you can send tap and scroll
- 5: // gestures. You can also use WidgetTester to find child widgets in the widget
- 6: // tree, read text, and verify that the values of widget properties are correct.
- 7: 
- 8: import 'package:flutter/material.dart';
- 9: import 'package:flutter_test/flutter_test.dart';
-10: 
-11: import 'package:lavamax/main.dart';
+1: import 'package:flutter_test/flutter_test.dart';
+2: 
+3: void main() {
+4:   testWidgets('placeholder', (WidgetTester tester) async {
+5:     expect(true, isTrue);
+6:   });
+7: }
+</file>
+
+<file path="ios/Runner/AppDelegate.swift">
+ 1: import Flutter
+ 2: import UIKit
+ 3: 
+ 4: @main
+ 5: @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+ 6:   override func application(
+ 7:     _ application: UIApplication,
+ 8:     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+ 9:   ) -> Bool {
+10:     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+11:   }
 12: 
-13: void main() {
-14:   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-15:     // Build our app and trigger a frame.
-16:     await tester.pumpWidget(const MyApp());
-17: 
-18:     // Verify that our counter starts at 0.
-19:     expect(find.text('0'), findsOneWidget);
-20:     expect(find.text('1'), findsNothing);
-21: 
-22:     // Tap the '+' icon and trigger a frame.
-23:     await tester.tap(find.byIcon(Icons.add));
-24:     await tester.pump();
-25: 
-26:     // Verify that our counter has incremented.
-27:     expect(find.text('0'), findsNothing);
-28:     expect(find.text('1'), findsOneWidget);
-29:   });
-30: }
+13:   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+14:     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+15:   }
+16: }
 </file>
 
-<file path="web/index.html">
- 1: <!DOCTYPE html>
- 2: <html>
- 3: <head>
- 4:   <!--
- 5:     If you are serving your web app in a path other than the root, change the
- 6:     href value below to reflect the base path you are serving from.
- 7: 
- 8:     The path provided below has to start and end with a slash "/" in order for
- 9:     it to work correctly.
+<file path="lib/main.dart">
+ 1: import 'dart:async';
+ 2: import 'package:firebase_core/firebase_core.dart';
+ 3: import 'package:flutter/material.dart';
+ 4: import 'package:flutter_riverpod/flutter_riverpod.dart';
+ 5: import 'package:lavamax/core/theme/app_theme.dart';
+ 6: import 'package:lavamax/firebase_options.dart';
+ 7: import 'package:lavamax/presentation/providers/auth_provider.dart';
+ 8: import 'package:lavamax/presentation/screens/auth_screen.dart';
+ 9: import 'package:lavamax/presentation/screens/home_screen.dart';
 10: 
-11:     For more details:
-12:     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-13: 
-14:     This is a placeholder for base href that will be replaced by the value of
-15:     the `--base-href` argument provided to `flutter build`.
-16:   -->
-17:   <base href="$FLUTTER_BASE_HREF">
+11: void main() {
+12:   runZonedGuarded(() async {
+13:     WidgetsFlutterBinding.ensureInitialized();
+14: 
+15:     FlutterError.onError = (details) {
+16:       FlutterError.presentError(details);
+17:     };
 18: 
-19:   <meta charset="UTF-8">
-20:   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-21:   <meta name="description" content="A new Flutter project.">
+19:     await Firebase.initializeApp(
+20:       options: DefaultFirebaseOptions.currentPlatform,
+21:     );
 22: 
-23:   <!-- iOS meta tags & icons -->
-24:   <meta name="mobile-web-app-capable" content="yes">
-25:   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-26:   <meta name="apple-mobile-web-app-title" content="lavamax">
-27:   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-28: 
-29:   <!-- Favicon -->
-30:   <link rel="icon" type="image/png" href="favicon.png"/>
-31: 
-32:   <title>lavamax</title>
-33:   <link rel="manifest" href="manifest.json">
-34: </head>
-35: <body>
-36:   <!--
-37:     You can customize the "flutter_bootstrap.js" script.
-38:     This is useful to provide a custom configuration to the Flutter loader
-39:     or to give the user feedback during the initialization process.
-40: 
-41:     For more details:
-42:     * https://docs.flutter.dev/platform-integration/web/initialization
-43:   -->
-44:   <script src="flutter_bootstrap.js" async></script>
-45: </body>
-46: </html>
+23:     runApp(
+24:       const ProviderScope(
+25:         child: LavaMaxApp(),
+26:       ),
+27:     );
+28:   }, (error, stack) {
+29:     runApp(MaterialApp(
+30:       home: Scaffold(
+31:         backgroundColor: Colors.white,
+32:         body: Center(
+33:           child: Padding(
+34:             padding: const EdgeInsets.all(24),
+35:             child: Text(
+36:               'Erro ao inicializar:\n$error',
+37:               textAlign: TextAlign.center,
+38:               style: const TextStyle(fontSize: 14, color: Colors.red),
+39:             ),
+40:           ),
+41:         ),
+42:       ),
+43:     ));
+44:   });
+45: }
+46: 
+47: class LavaMaxApp extends ConsumerWidget {
+48:   const LavaMaxApp({super.key});
+49:   @override
+50:   Widget build(BuildContext context, WidgetRef ref) {
+51:     final authState = ref.watch(authStateProvider);
+52:     return MaterialApp(
+53:       title: 'LavaMax',
+54:       debugShowCheckedModeBanner: false,
+55:       theme: AppTheme.lightTheme,
+56:       home: authState.when(
+57:         data: (user) => user != null ? const HomeScreen() : const AuthScreen(),
+58:         loading: () => const Scaffold(
+59:           body: Center(child: CircularProgressIndicator()),
+60:         ),
+61:         error: (_, _) => const AuthScreen(),
+62:       ),
+63:     );
+64:   }
+65: }
 </file>
 
-<file path="web/manifest.json">
- 1: {
- 2:     "name": "lavamax",
- 3:     "short_name": "lavamax",
- 4:     "start_url": ".",
- 5:     "display": "standalone",
- 6:     "background_color": "#0175C2",
- 7:     "theme_color": "#0175C2",
- 8:     "description": "A new Flutter project.",
- 9:     "orientation": "portrait-primary",
-10:     "prefer_related_applications": false,
-11:     "icons": [
-12:         {
-13:             "src": "icons/Icon-192.png",
-14:             "sizes": "192x192",
-15:             "type": "image/png"
-16:         },
-17:         {
-18:             "src": "icons/Icon-512.png",
-19:             "sizes": "512x512",
-20:             "type": "image/png"
-21:         },
-22:         {
-23:             "src": "icons/Icon-maskable-192.png",
-24:             "sizes": "192x192",
-25:             "type": "image/png",
-26:             "purpose": "maskable"
-27:         },
-28:         {
-29:             "src": "icons/Icon-maskable-512.png",
-30:             "sizes": "512x512",
-31:             "type": "image/png",
-32:             "purpose": "maskable"
-33:         }
-34:     ]
-35: }
-</file>
-
-<file path="ios/Podfile">
- 1: platform :ios, '15.0'
- 2: 
- 3: ENV['COCOAPODS_DISABLE_STATS'] = 'true'
- 4: 
- 5: project 'Runner', {
- 6:   'Debug' => :debug,
- 7:   'Profile' => :release,
- 8:   'Release' => :release,
- 9: }
-10: 
-11: def flutter_root
-12:   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
-13:   unless File.exist?(generated_xcode_build_settings_path)
-14:     raise "#{generated_xcode_build_settings_path} must exist. Run flutter pub get first"
-15:   end
-16:   File.foreach(generated_xcode_build_settings_path) do |line|
-17:     matches = line.match(/FLUTTER_ROOT\=(.*)/)
-18:     return matches[1].strip if matches
-19:   end
-20:   raise "FLUTTER_ROOT not found"
-21: end
-22: 
-23: require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
-24: 
-25: flutter_ios_podfile_setup
-26: 
-27: target 'Runner' do
-28:   use_frameworks!
-29:   use_modular_headers!
-30: 
-31:   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-32: end
-33: 
-34: post_install do |installer|
-35:   installer.pods_project.targets.each do |target|
-36:     flutter_additional_ios_build_settings(target)
-37:   end
-38: end
+<file path="lib/presentation/screens/auth_screen.dart">
+  1: import 'dart:convert';
+  2: import 'dart:math';
+  3: import 'package:cloud_firestore/cloud_firestore.dart';
+  4: import 'package:crypto/crypto.dart';
+  5: import 'package:firebase_auth/firebase_auth.dart';
+  6: import 'package:flutter/foundation.dart';
+  7: import 'package:flutter/material.dart';
+  8: import 'package:flutter/services.dart';
+  9: import 'package:google_sign_in/google_sign_in.dart';
+ 10: import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+ 11: import '../../data/models/user_model.dart';
+ 12: import '../../data/repositories/user_repository.dart';
+ 13: import 'services_catalog_screen.dart';
+ 14: class AuthScreen extends StatefulWidget {
+ 15:   const AuthScreen({super.key});
+ 16:   @override
+ 17:   State<AuthScreen> createState() => _AuthScreenState();
+ 18: }
+ 19: class _AuthScreenState extends State<AuthScreen> {
+ 20:   final _formKey = GlobalKey<FormState>();
+ 21:   final _nameCtrl = TextEditingController();
+ 22:   final _emailLoginCtrl = TextEditingController();
+ 23:   final _emailRegisterCtrl = TextEditingController();
+ 24:   final _identifierCtrl = TextEditingController();
+ 25:   final _passCtrl = TextEditingController();
+ 26:   bool _isLogin = true;
+ 27:   bool _loading = false;
+ 28:   bool _passVisible = false;
+ 29:   // 'email' | 'cpf' | 'phone'
+ 30:   String _identifierType = 'cpf';
+ 31:   @override
+ 32:   void dispose() {
+ 33:     _nameCtrl.dispose();
+ 34:     _emailLoginCtrl.dispose();
+ 35:     _emailRegisterCtrl.dispose();
+ 36:     _identifierCtrl.dispose();
+ 37:     _passCtrl.dispose();
+ 38:     super.dispose();
+ 39:   }
+ 40:   String _identifierLabel() {
+ 41:     switch (_identifierType) {
+ 42:       case 'cpf':
+ 43:         return 'CPF';
+ 44:       case 'phone':
+ 45:         return 'Telefone';
+ 46:       default:
+ 47:         return 'E-mail';
+ 48:     }
+ 49:   }
+ 50:   IconData _identifierIcon() {
+ 51:     switch (_identifierType) {
+ 52:       case 'cpf':
+ 53:         return Icons.badge_outlined;
+ 54:       case 'phone':
+ 55:         return Icons.phone_outlined;
+ 56:       default:
+ 57:         return Icons.email_outlined;
+ 58:     }
+ 59:   }
+ 60:   TextInputType _identifierKeyboard() {
+ 61:     switch (_identifierType) {
+ 62:       case 'cpf':
+ 63:       case 'phone':
+ 64:         return TextInputType.number;
+ 65:       default:
+ 66:         return TextInputType.emailAddress;
+ 67:     }
+ 68:   }
+ 69:   String? _validateIdentifier(String? v) {
+ 70:     if (v == null || v.trim().isEmpty) {
+ 71:       return 'Informe seu ${_identifierLabel()}';
+ 72:     }
+ 73:     if (_identifierType == 'cpf') {
+ 74:       final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+ 75:       if (digits.length != 11) return 'CPF deve ter 11 digitos';
+ 76:     }
+ 77:     if (_identifierType == 'phone') {
+ 78:       final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+ 79:       if (digits.length < 10) return 'Telefone invalido';
+ 80:     }
+ 81:     if (_identifierType == 'email') {
+ 82:       if (!v.contains('@')) return 'E-mail invalido';
+ 83:     }
+ 84:     return null;
+ 85:   }
+ 86:   /// Busca o email real na coleção pública `identifiers`.
+ 87:   Future<String?> _getEmailByIdentifier(String identifier) async {
+ 88:     final snap = await FirebaseFirestore.instance
+ 89:         .collection('identifiers')
+ 90:         .doc(identifier.trim().toLowerCase())
+ 91:         .get();
+ 92:     if (snap.exists) {
+ 93:       return snap.data()?['email'] as String?;
+ 94:     }
+ 95:     return null;
+ 96:   }
+ 97:   /// Login com e-mail direto (sem lookup em identifiers).
+ 98:   Future<void> _submitEmailLogin() async {
+ 99:     if (!_formKey.currentState!.validate()) return;
+100:     setState(() => _loading = true);
+101:     try {
+102:       await FirebaseAuth.instance.signInWithEmailAndPassword(
+103:         email: _emailLoginCtrl.text.trim(),
+104:         password: _passCtrl.text.trim(),
+105:       );
+106:     } on FirebaseAuthException catch (e) {
+107:       if (!mounted) return;
+108:       final msg = switch (e.code) {
+109:         'user-not-found' => 'E-mail nao encontrado.',
+110:         'wrong-password' => 'Senha incorreta.',
+111:         'invalid-credential' => 'E-mail ou senha incorretos.',
+112:         _ => e.message ?? 'Erro de autenticacao.',
+113:       };
+114:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+115:     } catch (e) {
+116:       if (mounted) {
+117:         ScaffoldMessenger.of(context)
+118:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+119:       }
+120:     } finally {
+121:       if (mounted) setState(() => _loading = false);
+122:     }
+123:   }
+124:   /// Login via CPF ou Telefone (lookup em identifiers).
+125:   Future<void> _submitIdentifierLogin() async {
+126:     if (!_formKey.currentState!.validate()) return;
+127:     setState(() => _loading = true);
+128:     try {
+129:       final identifier = _identifierCtrl.text.trim();
+130:       final email = await _getEmailByIdentifier(identifier);
+131:       if (email == null) {
+132:         if (mounted) {
+133:           ScaffoldMessenger.of(context).showSnackBar(
+134:             const SnackBar(content: Text('Identificador nao encontrado.')),
+135:           );
+136:         }
+137:         return;
+138:       }
+139:       await FirebaseAuth.instance.signInWithEmailAndPassword(
+140:         email: email,
+141:         password: _passCtrl.text.trim(),
+142:       );
+143:     } on FirebaseAuthException catch (e) {
+144:       if (!mounted) return;
+145:       final msg = switch (e.code) {
+146:         'wrong-password' => 'Senha incorreta.',
+147:         'invalid-credential' => 'Identificador ou senha incorretos.',
+148:         _ => e.message ?? 'Erro de autenticacao.',
+149:       };
+150:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+151:     } catch (e) {
+152:       if (mounted) {
+153:         ScaffoldMessenger.of(context)
+154:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+155:       }
+156:     } finally {
+157:       if (mounted) setState(() => _loading = false);
+158:     }
+159:   }
+160:   /// Cadastro novo usuário.
+161:   Future<void> _submitRegister() async {
+162:     if (!_formKey.currentState!.validate()) return;
+163:     setState(() => _loading = true);
+164:     try {
+165:       final auth = FirebaseAuth.instance;
+166:       final identifier = _identifierCtrl.text.trim();
+167:       final email = _identifierType == 'email'
+168:           ? identifier
+169:           : _emailRegisterCtrl.text.trim();
+170:       final cred = await auth.createUserWithEmailAndPassword(
+171:         email: email,
+172:         password: _passCtrl.text.trim(),
+173:       );
+174:       await UserRepository(FirebaseFirestore.instance).createUser(
+175:         UserModel(
+176:           uid: cred.user!.uid,
+177:           name: _nameCtrl.text.trim(),
+178:           email: email,
+179:           role: 'user',
+180:           identifier: identifier.toLowerCase(),
+181:           identifierType: _identifierType,
+182:         ),
+183:       );
+184:       final key = identifier.trim().toLowerCase();
+185:       await FirebaseFirestore.instance
+186:           .collection('identifiers')
+187:           .doc(key)
+188:           .set({'email': email, 'identifier_type': _identifierType});
+189:     } on FirebaseAuthException catch (e) {
+190:       if (!mounted) return;
+191:       final msg = switch (e.code) {
+192:         'email-already-in-use' => 'Este e-mail ja esta cadastrado.',
+193:         'weak-password' => 'Senha fraca — minimo 6 caracteres.',
+194:         _ => e.message ?? 'Erro de autenticacao.',
+195:       };
+196:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+197:     } catch (e) {
+198:       if (mounted) {
+199:         ScaffoldMessenger.of(context)
+200:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+201:       }
+202:     } finally {
+203:       if (mounted) setState(() => _loading = false);
+204:     }
+205:   }
+206:   /// Login / cadastro com Google.
+207:   Future<void> _signInWithGoogle() async {
+208:     setState(() => _loading = true);
+209:     try {
+210:       final googleUser = await GoogleSignIn().signIn();
+211:       if (googleUser == null) return; // usuário cancelou
+212:       final googleAuth = await googleUser.authentication;
+213:       final credential = GoogleAuthProvider.credential(
+214:         accessToken: googleAuth.accessToken,
+215:         idToken: googleAuth.idToken,
+216:       );
+217:       final userCred =
+218:           await FirebaseAuth.instance.signInWithCredential(credential);
+219:       final user = userCred.user!;
+220:       // Se for o primeiro login com Google, cria o documento no Firestore
+221:       final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
+222:       if (isNew) {
+223:         final email = user.email ?? '';
+224:         final name = user.displayName ?? '';
+225:         await UserRepository(FirebaseFirestore.instance).createUser(
+226:           UserModel(
+227:             uid: user.uid,
+228:             name: name,
+229:             email: email,
+230:             role: 'user',
+231:             identifier: email.toLowerCase(),
+232:             identifierType: 'email',
+233:           ),
+234:         );
+235:         await FirebaseFirestore.instance
+236:             .collection('identifiers')
+237:             .doc(email.toLowerCase())
+238:             .set({'email': email, 'identifier_type': 'email'});
+239:       }
+240:     } on FirebaseAuthException catch (e) {
+241:       if (!mounted) return;
+242:       ScaffoldMessenger.of(context).showSnackBar(
+243:         SnackBar(content: Text(e.message ?? 'Erro ao entrar com Google.')),
+244:       );
+245:     } catch (e) {
+246:       if (mounted) {
+247:         ScaffoldMessenger.of(context)
+248:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+249:       }
+250:     } finally {
+251:       if (mounted) setState(() => _loading = false);
+252:     }
+253:   }
+254:   String _generateNonce([int length = 32]) {
+255:     const charset =
+256:         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+257:     final random = Random.secure();
+258:     return List.generate(
+259:         length, (_) => charset[random.nextInt(charset.length)]).join();
+260:   }
+261: 
+262:   String _sha256ofString(String input) {
+263:     final bytes = utf8.encode(input);
+264:     return sha256.convert(bytes).toString();
+265:   }
+266: 
+267:   Future<void> _signInWithApple() async {
+268:     setState(() => _loading = true);
+269:     try {
+270:       final rawNonce = _generateNonce();
+271:       final nonce = _sha256ofString(rawNonce);
+272: 
+273:       final appleCredential = await SignInWithApple.getAppleIDCredential(
+274:         scopes: [
+275:           AppleIDAuthorizationScopes.email,
+276:           AppleIDAuthorizationScopes.fullName,
+277:         ],
+278:         nonce: nonce,
+279:         webAuthenticationOptions: WebAuthenticationOptions(
+280:           clientId: 'com.lavamax.lavamax.signin',
+281:           redirectUri: Uri.parse(
+282:             'https://lavamaxapp.firebaseapp.com/__/auth/handler',
+283:           ),
+284:         ),
+285:       );
+286: 
+287:       final idToken = appleCredential.identityToken;
+288:       if (idToken == null || idToken.isEmpty) {
+289:         throw Exception(
+290:           'Apple não retornou um token de identidade. '
+291:           'Verifique suas configurações de conta Apple e tente novamente.',
+292:         );
+293:       }
+294: 
+295:       final oauthCredential = OAuthProvider('apple.com').credential(
+296:         idToken: idToken,
+297:         rawNonce: rawNonce,
+298:       );
+299: 
+300:       final userCred =
+301:           await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+302: 
+303:       final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
+304:       if (isNew) {
+305:         final user = userCred.user!;
+306:         final email = user.email ?? appleCredential.email ?? '';
+307:         final firstName = appleCredential.givenName ?? '';
+308:         final lastName = appleCredential.familyName ?? '';
+309:         final name = [firstName, lastName]
+310:             .where((s) => s.isNotEmpty)
+311:             .join(' ')
+312:             .trim();
+313: 
+314:         await UserRepository(FirebaseFirestore.instance).createUser(
+315:           UserModel(
+316:             uid: user.uid,
+317:             name: name.isNotEmpty ? name : 'Usuário Apple',
+318:             email: email,
+319:             role: 'user',
+320:             identifier: email.toLowerCase(),
+321:             identifierType: 'email',
+322:           ),
+323:         );
+324:         if (email.isNotEmpty) {
+325:           await FirebaseFirestore.instance
+326:               .collection('identifiers')
+327:               .doc(email.toLowerCase())
+328:               .set({'email': email, 'identifier_type': 'email'});
+329:         }
+330:       }
+331:     } on SignInWithAppleAuthorizationException catch (e) {
+332:       if (e.code == AuthorizationErrorCode.canceled) return;
+333:       if (!mounted) return;
+334:       final msg = switch (e.code) {
+335:         AuthorizationErrorCode.failed =>
+336:           'Falha na autenticação com Apple. Verifique as configurações da sua conta Apple ID.',
+337:         AuthorizationErrorCode.invalidResponse =>
+338:           'Resposta inválida da Apple. Tente novamente.',
+339:         AuthorizationErrorCode.notHandled =>
+340:           'A autenticação Apple não pôde ser concluída. Tente novamente.',
+341:         AuthorizationErrorCode.notInteractive =>
+342:           'A autenticação Apple requer interação do usuário. Tente novamente.',
+343:         AuthorizationErrorCode.unknown =>
+344:           'Erro desconhecido na autenticação Apple. Tente novamente.',
+345:         _ => 'Erro ao entrar com Apple: ${e.message}',
+346:       };
+347:       ScaffoldMessenger.of(context).showSnackBar(
+348:         SnackBar(content: Text(msg), duration: const Duration(seconds: 5)),
+349:       );
+350:     } on FirebaseAuthException catch (e) {
+351:       if (!mounted) return;
+352:       final msg = switch (e.code) {
+353:         'invalid-credential' =>
+354:           'Credencial Apple inválida. Tente novamente.',
+355:         'user-disabled' => 'Esta conta foi desabilitada.',
+356:         'operation-not-allowed' =>
+357:           'Login com Apple não está habilitado neste app.',
+358:         'network-request-failed' =>
+359:           'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+360:         _ => e.message ?? 'Erro de autenticação com Apple.',
+361:       };
+362:       ScaffoldMessenger.of(context).showSnackBar(
+363:         SnackBar(content: Text(msg), duration: const Duration(seconds: 5)),
+364:       );
+365:     } catch (e) {
+366:       if (!mounted) return;
+367:       ScaffoldMessenger.of(context).showSnackBar(
+368:         SnackBar(
+369:           content: Text(e.toString()),
+370:           duration: const Duration(seconds: 5),
+371:         ),
+372:       );
+373:     } finally {
+374:       if (mounted) setState(() => _loading = false);
+375:     }
+376:   }
+377: 
+378:   void _exploreAsGuest() {
+379:     Navigator.of(context).push(
+380:       MaterialPageRoute(
+381:         builder: (_) => const ServicesCatalogScreen(isGuestMode: true),
+382:       ),
+383:     );
+384:   }
+385: 
+386:   Future<void> _forgotPassword() async {
+387:     // Mostra campos distintos dependendo do tipo de identificador
+388:     final identifierCtrl = TextEditingController(
+389:       text: _identifierType == 'email'
+390:           ? _emailLoginCtrl.text.trim()
+391:           : _identifierCtrl.text.trim(),
+392:     );
+393:     final confirmed = await showDialog<bool>(
+394:       context: context,
+395:       builder: (ctx) => AlertDialog(
+396:         title: const Text('Redefinir senha'),
+397:         content: Column(
+398:           mainAxisSize: MainAxisSize.min,
+399:           crossAxisAlignment: CrossAxisAlignment.start,
+400:           children: [
+401:             const Text(
+402:               'Digite o identificador cadastrado.\n'
+403:               'Enviaremos um link de redefinição para o e-mail associado.',
+404:               style: TextStyle(fontSize: 13),
+405:             ),
+406:             const SizedBox(height: 16),
+407:             TextField(
+408:               controller: identifierCtrl,
+409:               keyboardType: _identifierKeyboard(),
+410:               autofocus: true,
+411:               decoration: InputDecoration(
+412:                 labelText: _identifierLabel(),
+413:                 prefixIcon: Icon(_identifierIcon()),
+414:               ),
+415:             ),
+416:           ],
+417:         ),
+418:         actions: [
+419:           TextButton(
+420:             onPressed: () => Navigator.pop(ctx, false),
+421:             child: const Text('Cancelar'),
+422:           ),
+423:           FilledButton(
+424:             onPressed: () => Navigator.pop(ctx, true),
+425:             child: const Text('Enviar link'),
+426:           ),
+427:         ],
+428:       ),
+429:     );
+430:     if (confirmed != true) return;
+431:     final identifier = identifierCtrl.text.trim();
+432:     identifierCtrl.dispose();
+433:     if (identifier.isEmpty) return;
+434:     setState(() => _loading = true);
+435:     try {
+436:       String? email;
+437:       if (_identifierType == 'email') {
+438:         email = identifier;
+439:       } else {
+440:         email = await _getEmailByIdentifier(identifier);
+441:       }
+442:       if (email == null) {
+443:         if (mounted) {
+444:           ScaffoldMessenger.of(context).showSnackBar(
+445:             const SnackBar(content: Text('Identificador nao encontrado.')),
+446:           );
+447:         }
+448:         return;
+449:       }
+450:       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+451:       if (mounted) {
+452:         ScaffoldMessenger.of(context).showSnackBar(
+453:           const SnackBar(
+454:             content: Text(
+455:                 'Link de redefinicao enviado para o e-mail cadastrado.'),
+456:             duration: Duration(seconds: 4),
+457:           ),
+458:         );
+459:       }
+460:     } on FirebaseAuthException catch (e) {
+461:       if (mounted) {
+462:         ScaffoldMessenger.of(context).showSnackBar(
+463:           SnackBar(content: Text(e.message ?? 'Erro ao enviar e-mail.')),
+464:         );
+465:       }
+466:     } catch (e) {
+467:       if (mounted) {
+468:         ScaffoldMessenger.of(context)
+469:             .showSnackBar(SnackBar(content: Text('Erro: $e')));
+470:       }
+471:     } finally {
+472:       if (mounted) setState(() => _loading = false);
+473:     }
+474:   }
+475:   void _switchMode() {
+476:     setState(() {
+477:       _isLogin = !_isLogin;
+478:       _formKey.currentState?.reset();
+479:       _nameCtrl.clear();
+480:       _emailLoginCtrl.clear();
+481:       _emailRegisterCtrl.clear();
+482:       _identifierCtrl.clear();
+483:       _passCtrl.clear();
+484:     });
+485:   }
+486:   @override
+487:   Widget build(BuildContext context) {
+488:     final theme = Theme.of(context);
+489:     return Scaffold(
+490:       body: SafeArea(
+491:         child: Center(
+492:           child: SingleChildScrollView(
+493:             padding: const EdgeInsets.all(24),
+494:             child: Form(
+495:               key: _formKey,
+496:               child: Column(
+497:                 mainAxisSize: MainAxisSize.min,
+498:                 children: [
+499:                   Image.asset(
+500:                     'assets/images/lavamax_logo.png',
+501:                     height: 100,
+502:                   ),
+503:                   const SizedBox(height: 16),
+504:                   Text(
+505:                     _isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta',
+506:                     style: theme.textTheme.titleMedium,
+507:                   ),
+508:                   const SizedBox(height: 32),
+509:                   // ── Seletor de tipo de identificador ──────────────
+510:                   SegmentedButton<String>(
+511:                     segments: const [
+512:                       ButtonSegment(
+513:                         value: 'email',
+514:                         label: Text('E-mail'),
+515:                         icon: Icon(Icons.email_outlined),
+516:                       ),
+517:                       ButtonSegment(
+518:                         value: 'cpf',
+519:                         label: Text('CPF'),
+520:                         icon: Icon(Icons.badge_outlined),
+521:                       ),
+522:                       ButtonSegment(
+523:                         value: 'phone',
+524:                         label: Text('Telefone'),
+525:                         icon: Icon(Icons.phone_outlined),
+526:                       ),
+527:                     ],
+528:                     selected: {_identifierType},
+529:                     onSelectionChanged: (s) => setState(() {
+530:                       _identifierType = s.first;
+531:                       _identifierCtrl.clear();
+532:                       _emailLoginCtrl.clear();
+533:                     }),
+534:                   ),
+535:                   const SizedBox(height: 20),
+536:                   // ── Campo principal de identificador ───────────────
+537:                   if (_identifierType == 'email' && _isLogin)
+538:                     // Login por e-mail: campo direto
+539:                     TextFormField(
+540:                       controller: _emailLoginCtrl,
+541:                       keyboardType: TextInputType.emailAddress,
+542:                       decoration: const InputDecoration(
+543:                         labelText: 'E-mail',
+544:                         prefixIcon: Icon(Icons.email_outlined),
+545:                       ),
+546:                       validator: (v) =>
+547:                           (v == null || !v.contains('@'))
+548:                               ? 'E-mail invalido'
+549:                               : null,
+550:                     )
+551:                   else
+552:                     TextFormField(
+553:                       controller: _identifierCtrl,
+554:                       keyboardType: _identifierKeyboard(),
+555:                       inputFormatters: (_identifierType == 'cpf' ||
+556:                               _identifierType == 'phone')
+557:                           ? [FilteringTextInputFormatter.digitsOnly]
+558:                           : null,
+559:                       decoration: InputDecoration(
+560:                         labelText: _identifierLabel(),
+561:                         prefixIcon: Icon(_identifierIcon()),
+562:                       ),
+563:                       validator: _validateIdentifier,
+564:                     ),
+565:                   const SizedBox(height: 16),
+566:                   // ── Campos extras apenas no cadastro ───────────────
+567:                   if (!_isLogin) ...[
+568:                     TextFormField(
+569:                       controller: _nameCtrl,
+570:                       textCapitalization: TextCapitalization.words,
+571:                       decoration: const InputDecoration(
+572:                         labelText: 'Nome completo',
+573:                         prefixIcon: Icon(Icons.person_outline),
+574:                       ),
+575:                       validator: (v) =>
+576:                           (v == null || v.trim().isEmpty)
+577:                               ? 'Informe seu nome'
+578:                               : null,
+579:                     ),
+580:                     const SizedBox(height: 16),
+581:                     // Se o identificador NÃO for e-mail, pede e-mail separado
+582:                     if (_identifierType != 'email') ...[
+583:                       TextFormField(
+584:                         controller: _emailRegisterCtrl,
+585:                         keyboardType: TextInputType.emailAddress,
+586:                         decoration: const InputDecoration(
+587:                           labelText: 'E-mail',
+588:                           prefixIcon: Icon(Icons.email_outlined),
+589:                         ),
+590:                         validator: (v) =>
+591:                             (v == null || !v.contains('@'))
+592:                                 ? 'E-mail invalido'
+593:                                 : null,
+594:                       ),
+595:                       const SizedBox(height: 16),
+596:                     ],
+597:                   ],
+598:                   // ── Senha ──────────────────────────────────────────
+599:                   TextFormField(
+600:                     controller: _passCtrl,
+601:                     obscureText: !_passVisible,
+602:                     decoration: InputDecoration(
+603:                       labelText: 'Senha',
+604:                       prefixIcon: const Icon(Icons.lock_outline),
+605:                       suffixIcon: IconButton(
+606:                         tooltip: _passVisible
+607:                             ? 'Ocultar senha'
+608:                             : 'Mostrar senha',
+609:                         icon: Icon(
+610:                           _passVisible
+611:                               ? Icons.visibility_off_outlined
+612:                               : Icons.visibility_outlined,
+613:                         ),
+614:                         onPressed: () =>
+615:                             setState(() => _passVisible = !_passVisible),
+616:                       ),
+617:                     ),
+618:                     validator: (v) =>
+619:                         (v == null || v.length < 6)
+620:                             ? 'Minimo 6 caracteres'
+621:                             : null,
+622:                   ),
+623:                   const SizedBox(height: 24),
+624:                   // ── Botão principal ────────────────────────────────
+625:                   SizedBox(
+626:                     width: double.infinity,
+627:                     child: FilledButton(
+628:                       onPressed: _loading
+629:                           ? null
+630:                           : () {
+631:                               if (_isLogin) {
+632:                                 if (_identifierType == 'email') {
+633:                                   _submitEmailLogin();
+634:                                 } else {
+635:                                   _submitIdentifierLogin();
+636:                                 }
+637:                               } else {
+638:                                 _submitRegister();
+639:                               }
+640:                             },
+641:                       child: _loading
+642:                           ? const SizedBox(
+643:                               height: 20,
+644:                               width: 20,
+645:                               child: CircularProgressIndicator(
+646:                                   strokeWidth: 2),
+647:                             )
+648:                           : Text(_isLogin ? 'Entrar' : 'Cadastrar'),
+649:                     ),
+650:                   ),
+651:                   // ── Esqueci minha senha ────────────────────────────
+652:                   if (_isLogin) ...[
+653:                     const SizedBox(height: 8),
+654:                     SizedBox(
+655:                       width: double.infinity,
+656:                       child: TextButton(
+657:                         onPressed: _loading ? null : _forgotPassword,
+658:                         child: const Text('Esqueci minha senha'),
+659:                       ),
+660:                     ),
+661:                   ],
+662:                   // ── Divisor ────────────────────────────────────────
+663:                   const SizedBox(height: 8),
+664:                   Row(
+665:                     children: [
+666:                       const Expanded(child: Divider()),
+667:                       Padding(
+668:                         padding: const EdgeInsets.symmetric(horizontal: 12),
+669:                         child: Text(
+670:                           'ou',
+671:                           style: theme.textTheme.bodySmall?.copyWith(
+672:                               color: Colors.grey),
+673:                         ),
+674:                       ),
+675:                       const Expanded(child: Divider()),
+676:                     ],
+677:                   ),
+678:                   const SizedBox(height: 8),
+679:                   // ── Botão Google ───────────────────────────────────
+680:                   SizedBox(
+681:                     width: double.infinity,
+682:                     child: OutlinedButton.icon(
+683:                       onPressed: _loading ? null : _signInWithGoogle,
+684:                       icon: Image.asset(
+685:                         'assets/icons/google_logo.png',
+686:                         height: 20,
+687:                         errorBuilder: (_, _, _) =>
+688:                             const Icon(Icons.g_mobiledata, size: 22),
+689:                       ),
+690:                       label: const Text('Continuar com Google'),
+691:                     ),
+692:                   ),
+693:                   // ── Botão Apple (apenas iOS) ────────────────────────
+694:                   if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+695:                     const SizedBox(height: 8),
+696:                     SizedBox(
+697:                       width: double.infinity,
+698:                       child: SignInWithAppleButton(
+699:                         onPressed: _loading ? () {} : _signInWithApple,
+700:                         style: SignInWithAppleButtonStyle.black,
+701:                         borderRadius:
+702:                             const BorderRadius.all(Radius.circular(8)),
+703:                       ),
+704:                     ),
+705:                   ],
+706:                   const SizedBox(height: 4),
+707:                   // ── Alternar login / cadastro ──────────────────────
+708:                   TextButton(
+709:                     onPressed: _switchMode,
+710:                     child: Text(
+711:                       _isLogin
+712:                           ? 'Nao tem conta? Cadastre-se'
+713:                           : 'Ja tem conta? Entre',
+714:                     ),
+715:                   ),
+716:                   // ── Explorar sem login ──────────────────────────────
+717:                   TextButton(
+718:                     onPressed: _loading ? null : _exploreAsGuest,
+719:                     child: Text(
+720:                       'Explorar serviços sem login',
+721:                       style: theme.textTheme.bodySmall?.copyWith(
+722:                         color: Colors.grey,
+723:                         decoration: TextDecoration.underline,
+724:                       ),
+725:                     ),
+726:                   ),
+727:                 ],
+728:               ),
+729:             ),
+730:           ),
+731:         ),
+732:       ),
+733:     );
+734:   }
+735: }
 </file>
 
 <file path="ios/Runner/Info.plist">
@@ -10959,15 +11530,28 @@ This section contains the contents of the repository's files.
 65: 		<string>UIInterfaceOrientationLandscapeLeft</string>
 66: 		<string>UIInterfaceOrientationLandscapeRight</string>
 67: 	</array>
-68: <key>ITSAppUsesNonExemptEncryption</key><false /></dict>
-69: </plist>
+68: 	<key>GIDClientID</key>
+69: 	<string>84104652853-9nemmmm39mvmdi78dg1hi3fu9n4so2uk.apps.googleusercontent.com</string>
+70: 	<key>CFBundleURLTypes</key>
+71: 	<array>
+72: 		<dict>
+73: 			<key>CFBundleTypeRole</key>
+74: 			<string>Editor</string>
+75: 			<key>CFBundleURLSchemes</key>
+76: 			<array>
+77: 				<string>com.googleusercontent.apps.84104652853-9nemmmm39mvmdi78dg1hi3fu9n4so2uk</string>
+78: 			</array>
+79: 		</dict>
+80: 	</array>
+81: 	<key>ITSAppUsesNonExemptEncryption</key><false /></dict>
+82: </plist>
 </file>
 
 <file path="pubspec.yaml">
  1: name: lavamax
  2: description: "App de agendamento de serviços automotivos para LavaMax."
  3: publish_to: 'none'
- 4: version: 1.0.1+4
+ 4: version: 1.0.6+15
  5: environment:
  6:   sdk: ^3.11.0
  7: dependencies:
@@ -10996,22 +11580,24 @@ This section contains the contents of the repository's files.
 30:   shared_preferences: ^2.2.0
 31:   connectivity_plus: ^6.0.0
 32:   cupertino_icons: ^1.0.8
-33: dev_dependencies:
-34:   flutter_test:
-35:     sdk: flutter
-36:   flutter_lints: ^6.0.0
-37:   flutter_launcher_icons: ^0.14.1
-38: flutter:
-39:   uses-material-design: true
-40:   assets:
-41:     - assets/images/services_sprite.png
-42:     - assets/images/
-43:     - assets/icons/
-44:     - assets/images/services/
-45: flutter_launcher_icons:
-46:   android: true
-47:   ios: true
-48:   image_path: "assets/images/lavamax_icon.png"
+33:   sign_in_with_apple: ^6.1.0
+34:   crypto: ^3.0.0
+35: dev_dependencies:
+36:   flutter_test:
+37:     sdk: flutter
+38:   flutter_lints: ^6.0.0
+39:   flutter_launcher_icons: ^0.14.1
+40: flutter:
+41:   uses-material-design: true
+42:   assets:
+43:     - assets/images/services_sprite.png
+44:     - assets/images/
+45:     - assets/icons/
+46:     - assets/images/services/
+47: flutter_launcher_icons:
+48:   android: true
+49:   ios: true
+50:   image_path: "assets/images/lavamax_icon.png"
 </file>
 
 </files>

@@ -9,6 +9,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../providers/user_provider.dart';
+
+class _PhoneMaskFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final digits =
+        newValue.text.replaceAll(RegExp(r'\D'), '').substring(0, _min(newValue.text.replaceAll(RegExp(r'\D'), '').length, 11));
+    final text = _applyMask(digits);
+    return newValue.copyWith(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  static int _min(int a, int b) => a < b ? a : b;
+
+  static String _applyMask(String digits) {
+    if (digits.isEmpty) return '';
+    final buf = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i == 0) buf.write('(');
+      buf.write(digits[i]);
+      if (i == 1) buf.write(')');
+      if (digits.length <= 10 && i == 5) buf.write('-');
+      if (digits.length == 11 && i == 6) buf.write('-');
+    }
+    return buf.toString();
+  }
+}
+
+String _phoneMask(String digits) =>
+    _PhoneMaskFormatter._applyMask(digits.replaceAll(RegExp(r'\D'), ''));
+
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
   @override
@@ -47,8 +80,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!_initialized) {
       _nameCtrl.text = name;
       _emailCtrl.text = email;
-      _phoneCtrl.text = phone;
-      _whatsappCtrl.text = whatsapp;
+      _phoneCtrl.text = _phoneMask(phone);
+      _whatsappCtrl.text = _phoneMask(whatsapp);
       _addressCtrl.text = address;
       // Se telefone e whatsapp são iguais e não vazios, marca o checkbox
       if (phone.isNotEmpty && phone == whatsapp) {
@@ -361,18 +394,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   TextFormField(
                     controller: _phoneCtrl,
                     keyboardType: TextInputType.phone,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    maxLength: 11,
+                    inputFormatters: [_PhoneMaskFormatter()],
                     onChanged: _onPhoneChanged,
                     decoration: const InputDecoration(
                       labelText: 'Telefone',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.phone_outlined),
-                      hintText: '11999998888',
-                      counterText: '',
+                      hintText: '(11)99999-8888',
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return null; // opcional
+                      if (v == null || v.isEmpty) return null;
                       final digits = _onlyDigits(v);
                       if (digits.length < 10 || digits.length > 11) {
                         return 'Informe um telefone valido (10 ou 11 digitos)';
@@ -398,22 +429,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   TextFormField(
                     controller: _whatsappCtrl,
                     keyboardType: TextInputType.phone,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    maxLength: 11,
+                    inputFormatters: [_PhoneMaskFormatter()],
                     enabled: !_whatsappSameAsPhone,
                     decoration: InputDecoration(
                       labelText: 'WhatsApp',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.chat_outlined),
-                      hintText: '11999998888',
-                      counterText: '',
+                      hintText: '(11)99999-8888',
                       filled: _whatsappSameAsPhone,
                       fillColor: _whatsappSameAsPhone
                           ? Theme.of(context).disabledColor.withValues(alpha: 0.08)
                           : null,
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return null; // opcional
+                      if (v == null || v.isEmpty) return null;
                       final digits = _onlyDigits(v);
                       if (digits.length < 10 || digits.length > 11) {
                         return 'Informe um WhatsApp valido (10 ou 11 digitos)';

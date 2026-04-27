@@ -4,7 +4,24 @@
       "WebFetch(domain:lavamaxstudiocar.com.br)",
       "Bash(node fix_services.js)",
       "Bash(flutter pub *)",
-      "Bash(flutter analyze *)"
+      "Bash(flutter analyze *)",
+      "Bash(python *)",
+      "Bash(python3 -c \"from PIL import Image; imgs = ['Print 1 iOS.jpeg','Print 2 iOS.jpeg','Print 3 iOS.jpeg']; [print\\(n, Image.open\\(f'C:/Users/Alex Salles/Apps - desenvolvimento/lavamax/assets/images/{n}'\\).size\\) for n in imgs]\")",
+      "Bash(where python *)",
+      "Bash(where python3 *)",
+      "PowerShell(Get-Command *)",
+      "Bash(py *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(grep -A4 \"name: firebase_core$\\\\|name: firebase_auth$\\\\|name: connectivity_plus$\\\\|name: sign_in_with_apple$\\\\|name: google_sign_in$\" pubspec.lock)",
+      "Bash(flutter clean *)",
+      "Bash(flutter --version)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.dbestech.com)",
+      "WebFetch(domain:medium.com)",
+      "Bash(git log *)"
     ]
   }
 }

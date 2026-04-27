@@ -1,17 +1,92 @@
-rules_version='2'
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 3, 29);
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isMaster() {
+      return isAuth()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'master';
+    }
+
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // Identifiers: publicly readable (used for login lookup before auth),
+    // writable only by authenticated users (registration / account deletion).
+    match /identifiers/{identifier} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
+    // Users: each user reads/writes their own doc; master reads/writes all.
+    // Role field is immutable by the owner — only master can change it.
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isMaster();
+      allow create: if isAuth();
+      allow update: if isOwner(uid)
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+                    || isMaster();
+      allow delete: if isOwner(uid) || isMaster();
+
+      match /vehicles/{vehicleId} {
+        allow read, write: if isOwner(uid) || isMaster();
+      }
+    }
+
+    // Branches: readable by any authenticated user; writable only by master.
+    match /branches/{branchId} {
+      allow read: if isAuth();
+      allow write: if isMaster();
+    }
+
+    // Services: readable by any authenticated user; writable only by master.
+    match /services/{serviceId} {
+      allow read: if isAuth();
+      allow write: if isMaster();
+    }
+
+    // Vehicle brands (and their models subcollection): same policy as services.
+    match /vehicle_brands/{brandId} {
+      allow read: if isAuth();
+      allow write: if isMaster();
+
+      match /models/{modelId} {
+        allow read: if isAuth();
+        allow write: if isMaster();
+      }
+    }
+
+    // Consultants: readable by authenticated; writable by master.
+    match /consultants/{consultantId} {
+      allow read: if isAuth();
+      allow write: if isMaster();
+    }
+
+    // Slots: readable/writable by any authenticated user
+    // (booking transactions update slots atomically).
+    match /slots/{slotId} {
+      allow read, write: if isAuth();
+    }
+
+    // Appointments: readable/writable by any authenticated user.
+    match /appointments/{appointmentId} {
+      allow read, write: if isAuth();
+    }
+
+    // Credits: readable/writable by any authenticated user
+    // (cancellation flow grants credits back to the user).
+    match /credits/{creditId} {
+      allow read, write: if isAuth();
+    }
+
+    // Config: readable by authenticated; writable only by master.
+    match /config/{docId} {
+      allow read: if isAuth();
+      allow write: if isMaster();
     }
   }
 }

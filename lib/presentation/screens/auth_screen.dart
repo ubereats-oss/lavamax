@@ -11,11 +11,13 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
 import 'services_catalog_screen.dart';
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
+
 class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
@@ -37,6 +39,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _passCtrl.dispose();
     super.dispose();
   }
+
   String _identifierLabel() {
     switch (_identifierType) {
       case 'cpf':
@@ -47,6 +50,7 @@ class _AuthScreenState extends State<AuthScreen> {
         return 'E-mail';
     }
   }
+
   IconData _identifierIcon() {
     switch (_identifierType) {
       case 'cpf':
@@ -57,6 +61,7 @@ class _AuthScreenState extends State<AuthScreen> {
         return Icons.email_outlined;
     }
   }
+
   TextInputType _identifierKeyboard() {
     switch (_identifierType) {
       case 'cpf':
@@ -66,6 +71,7 @@ class _AuthScreenState extends State<AuthScreen> {
         return TextInputType.emailAddress;
     }
   }
+
   String? _validateIdentifier(String? v) {
     if (v == null || v.trim().isEmpty) {
       return 'Informe seu ${_identifierLabel()}';
@@ -83,6 +89,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     return null;
   }
+
   /// Busca o email real na coleção pública `identifiers`.
   Future<String?> _getEmailByIdentifier(String identifier) async {
     final snap = await FirebaseFirestore.instance
@@ -94,6 +101,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     return null;
   }
+
   /// Login com e-mail direto (sem lookup em identifiers).
   Future<void> _submitEmailLogin() async {
     if (!_formKey.currentState!.validate()) return;
@@ -114,13 +122,15 @@ class _AuthScreenState extends State<AuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
+
   /// Login via CPF ou Telefone (lookup em identifiers).
   Future<void> _submitIdentifierLogin() async {
     if (!_formKey.currentState!.validate()) return;
@@ -150,13 +160,15 @@ class _AuthScreenState extends State<AuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
+
   /// Cadastro novo usuário.
   Future<void> _submitRegister() async {
     if (!_formKey.currentState!.validate()) return;
@@ -182,10 +194,10 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       );
       final key = identifier.trim().toLowerCase();
-      await FirebaseFirestore.instance
-          .collection('identifiers')
-          .doc(key)
-          .set({'email': email, 'identifier_type': _identifierType});
+      await FirebaseFirestore.instance.collection('identifiers').doc(key).set({
+        'email': email,
+        'identifier_type': _identifierType,
+      });
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final msg = switch (e.code) {
@@ -196,13 +208,15 @@ class _AuthScreenState extends State<AuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
+
   /// Login / cadastro com Google.
   Future<void> _signInWithGoogle() async {
     setState(() => _loading = true);
@@ -214,8 +228,9 @@ class _AuthScreenState extends State<AuthScreen> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final userCred =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCred = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
       final user = userCred.user!;
       // Se for o primeiro login com Google, cria o documento no Firestore
       final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
@@ -244,19 +259,23 @@ class _AuthScreenState extends State<AuthScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
+
   String _generateNonce([int length = 32]) {
     const charset =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final random = Random.secure();
     return List.generate(
-        length, (_) => charset[random.nextInt(charset.length)]).join();
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 
   String _sha256ofString(String input) {
@@ -276,12 +295,6 @@ class _AuthScreenState extends State<AuthScreen> {
           AppleIDAuthorizationScopes.fullName,
         ],
         nonce: nonce,
-        webAuthenticationOptions: WebAuthenticationOptions(
-          clientId: 'com.lavamax.lavamax.signin',
-          redirectUri: Uri.parse(
-            'https://lavamaxapp.firebaseapp.com/__/auth/handler',
-          ),
-        ),
       );
 
       final idToken = appleCredential.identityToken;
@@ -295,10 +308,12 @@ class _AuthScreenState extends State<AuthScreen> {
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: idToken,
         rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
       );
 
-      final userCred =
-          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final userCred = await FirebaseAuth.instance.signInWithCredential(
+        oauthCredential,
+      );
 
       final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
       if (isNew) {
@@ -306,10 +321,10 @@ class _AuthScreenState extends State<AuthScreen> {
         final email = user.email ?? appleCredential.email ?? '';
         final firstName = appleCredential.givenName ?? '';
         final lastName = appleCredential.familyName ?? '';
-        final name = [firstName, lastName]
-            .where((s) => s.isNotEmpty)
-            .join(' ')
-            .trim();
+        final name = [
+          firstName,
+          lastName,
+        ].where((s) => s.isNotEmpty).join(' ').trim();
 
         await UserRepository(FirebaseFirestore.instance).createUser(
           UserModel(
@@ -350,8 +365,7 @@ class _AuthScreenState extends State<AuthScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final msg = switch (e.code) {
-        'invalid-credential' =>
-          'Credencial Apple inválida. Tente novamente.',
+        'invalid-credential' => 'Credencial Apple inválida. Tente novamente.',
         'user-disabled' => 'Esta conta foi desabilitada.',
         'operation-not-allowed' =>
           'Login com Apple não está habilitado neste app.',
@@ -452,7 +466,8 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'Link de redefinicao enviado para o e-mail cadastrado.'),
+              'Link de redefinicao enviado para o e-mail cadastrado.',
+            ),
             duration: Duration(seconds: 4),
           ),
         );
@@ -465,13 +480,15 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
+
   void _switchMode() {
     setState(() {
       _isLogin = !_isLogin;
@@ -483,6 +500,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _passCtrl.clear();
     });
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -496,10 +514,7 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/images/lavamax_logo.png',
-                    height: 100,
-                  ),
+                  Image.asset('assets/images/lavamax_logo.png', height: 100),
                   const SizedBox(height: 16),
                   Text(
                     _isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta',
@@ -543,16 +558,16 @@ class _AuthScreenState extends State<AuthScreen> {
                         labelText: 'E-mail',
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
-                      validator: (v) =>
-                          (v == null || !v.contains('@'))
-                              ? 'E-mail invalido'
-                              : null,
+                      validator: (v) => (v == null || !v.contains('@'))
+                          ? 'E-mail invalido'
+                          : null,
                     )
                   else
                     TextFormField(
                       controller: _identifierCtrl,
                       keyboardType: _identifierKeyboard(),
-                      inputFormatters: (_identifierType == 'cpf' ||
+                      inputFormatters:
+                          (_identifierType == 'cpf' ||
                               _identifierType == 'phone')
                           ? [FilteringTextInputFormatter.digitsOnly]
                           : null,
@@ -572,10 +587,9 @@ class _AuthScreenState extends State<AuthScreen> {
                         labelText: 'Nome completo',
                         prefixIcon: Icon(Icons.person_outline),
                       ),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty)
-                              ? 'Informe seu nome'
-                              : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe seu nome'
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     // Se o identificador NÃO for e-mail, pede e-mail separado
@@ -587,10 +601,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           labelText: 'E-mail',
                           prefixIcon: Icon(Icons.email_outlined),
                         ),
-                        validator: (v) =>
-                            (v == null || !v.contains('@'))
-                                ? 'E-mail invalido'
-                                : null,
+                        validator: (v) => (v == null || !v.contains('@'))
+                            ? 'E-mail invalido'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -615,10 +628,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             setState(() => _passVisible = !_passVisible),
                       ),
                     ),
-                    validator: (v) =>
-                        (v == null || v.length < 6)
-                            ? 'Minimo 6 caracteres'
-                            : null,
+                    validator: (v) => (v == null || v.length < 6)
+                        ? 'Minimo 6 caracteres'
+                        : null,
                   ),
                   const SizedBox(height: 24),
                   // ── Botão principal ────────────────────────────────
@@ -642,8 +654,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(_isLogin ? 'Entrar' : 'Cadastrar'),
                     ),
@@ -669,7 +680,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Text(
                           'ou',
                           style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey),
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                       const Expanded(child: Divider()),
@@ -698,8 +710,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: SignInWithAppleButton(
                         onPressed: _loading ? () {} : _signInWithApple,
                         style: SignInWithAppleButtonStyle.black,
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(8)),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(8),
+                        ),
                       ),
                     ),
                   ],
