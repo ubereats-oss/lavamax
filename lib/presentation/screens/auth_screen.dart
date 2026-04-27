@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
@@ -295,6 +296,14 @@ class _AuthScreenState extends State<AuthScreen> {
           AppleIDAuthorizationScopes.fullName,
         ],
         nonce: nonce,
+        webAuthenticationOptions: Platform.isIOS
+            ? null
+            : WebAuthenticationOptions(
+                clientId: 'com.lavamax.lavamax.signin',
+                redirectUri: Uri.parse(
+                  'https://lavamaxapp.firebaseapp.com/__/auth/handler',
+                ),
+              ),
       );
 
       final idToken = appleCredential.identityToken;
