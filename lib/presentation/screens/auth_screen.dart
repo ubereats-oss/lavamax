@@ -325,16 +325,16 @@ class _AuthScreenState extends State<AuthScreen> {
       );
 
       final isNew = userCred.additionalUserInfo?.isNewUser ?? false;
-      if (isNew) {
-        final user = userCred.user!;
-        final email = user.email ?? appleCredential.email ?? '';
-        final firstName = appleCredential.givenName ?? '';
-        final lastName = appleCredential.familyName ?? '';
-        final name = [
-          firstName,
-          lastName,
-        ].where((s) => s.isNotEmpty).join(' ').trim();
+      final user = userCred.user!;
+      final email = user.email ?? appleCredential.email ?? '';
+      final firstName = appleCredential.givenName ?? '';
+      final lastName = appleCredential.familyName ?? '';
+      final name = [firstName, lastName]
+          .where((s) => s.isNotEmpty)
+          .join(' ')
+          .trim();
 
+      if (isNew) {
         await UserRepository(FirebaseFirestore.instance).createUser(
           UserModel(
             uid: user.uid,
@@ -351,6 +351,11 @@ class _AuthScreenState extends State<AuthScreen> {
               .doc(email.toLowerCase())
               .set({'email': email, 'identifier_type': 'email'});
         }
+      } else if (name.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'name': name});
       }
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return;
