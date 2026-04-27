@@ -46,3 +46,9 @@ app.*.map.json
 
 serviceAccountKey.json
 serviceAccountKeyLavaMax.json
+
+# Apple private keys
+*.p8
+
+# Local scripts
+claude_sim.bat
